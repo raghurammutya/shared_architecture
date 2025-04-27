@@ -1,0 +1,1 @@
+"""SQL Alchemy model for Strategy and Legs"""
