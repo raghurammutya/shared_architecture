@@ -1,1 +1,6 @@
 .qodo
+# Ignore local test artifacts
+__pycache__/
+*.pyc
+.cache/
+htmlcov/

@@ -1,5 +1,6 @@
 MANIFEST.in
 README.md
+conftest.py
 requirements.txt
 setup.py
 shared_architecture/__init__.py
@@ -10,6 +11,7 @@ shared_architecture.egg-info/requires.txt
 shared_architecture.egg-info/top_level.txt
 shared_architecture/config/__init__.py
 shared_architecture/config/common.py
+shared_architecture/config/config_loader.py
 shared_architecture/config/config_manager.py
 shared_architecture/config/secrets.py
 shared_architecture/connections/__init__.py
@@ -33,6 +35,10 @@ shared_architecture/db/models/broker.py
 shared_architecture/db/models/database.py
 shared_architecture/db/models/enums.py
 shared_architecture/db/models/historical_data.py
+shared_architecture/db/models/holding_model.py
+shared_architecture/db/models/margin_model.py
+shared_architecture/db/models/order_model.py
+shared_architecture/db/models/position_model.py
 shared_architecture/db/models/stocksdeveloper.py
 shared_architecture/db/models/strategy.py
 shared_architecture/db/models/symbol.py
@@ -48,3 +54,8 @@ shared_architecture/utils/other_helpers.py
 shared_architecture/utils/rabbitmq_helper.py
 shared_architecture/utils/retry_helpers.py
 shared_architecture/utils/service_helpers.py
+tests/test_bootstrap.py
+tests/test_mongo_mock.py
+tests/test_rabbitmq_mock.py
+tests/test_redis_mock.py
+tests/test_timescaledb_mock.py
