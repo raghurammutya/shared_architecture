@@ -1,174 +1,85 @@
 import os
+import socket
 import logging
 from redis.asyncio import RedisCluster
-import socket
-from shared_architecture.connections.timescaledb import TimescaleDBConnection
-from shared_architecture.connections.rabbitmq import RabbitMQConnection
-from shared_architecture.connections.mongodb import MongoDBConnection
-from shared_architecture.connections.redis_connection import RedisConnectionFactory
-# Setup logging
-logging.basicConfig(
-    level=os.getenv("LOGGING_LEVEL", "INFO"),
-    format="%(asctime)s - %(levelname)s - %(message)s"
+from shared_architecture.config.config_loader import get_env, ENV
+from shared_architecture.connections import (
+    get_redis_connection,
+    get_timescaledb_session,
+    get_rabbitmq_connection,
+    get_mongo_connection,
+    close_all_connections,
 )
 
-class AsyncConnectionManager:
+
+logger = logging.getLogger(__name__)
+
+__all__ = [
+    "get_redis",
+    "get_timescaledb_session",
+    "get_mongo",
+    "get_rabbitmq_channel",
+    "initialize_service",
+    "RedisClient"
+]
+
+def initialize_service():
+    logger.info("Initializing service...")
+    logger.info(f"ENV: {get_env('ENV', 'dev')}")
+    logger.info(f"USE_MOCKS: {get_env('USE_MOCKS', False, cast_type=bool)}")
+    # Additional startup checks or health logging can go here
+
+# Optional advanced Redis client
+if ENV.use_mocks:
+    from shared_architecture.mocks.redis_mock import RedisMock
+
+class RedisClient:
     def __init__(self, config: dict):
         self.config = config
-        self._timescaledb_conn = None
-        self._redis_pool = None
-        self._rabbitmq_conn = None
-        self._mongodb_conn = None
+        self.client = None
 
-    async def initialize(self):
-        logging.info("Initializing connection pools and shared services...")
-        await self._initialize_timescaledb()
-        await self._initialize_redis()
-        self._initialize_rabbitmq()
-        await self._initialize_mongodb()
-        logging.info("All connections initialized.")
-    async def _initialize_redis(self):
-        try:
-            redis_factory = RedisConnectionFactory()
-            await redis_factory.connect()
-            self._redis_pool = await redis_factory.get_connection()
-            logger.info("Redis (standalone or cluster) initialized.")
-        except Exception as e:
-            logger.error(f"Failed to initialize Redis: {e}")
+    async def connect(self):
+        if ENV.use_mocks:
+            logger.warning("Using RedisMock (USE_MOCKS=true)")
+            self.client = RedisMock()
+            return
+
+        startup_nodes = self._discover_redis_cluster_nodes()
+        if not startup_nodes:
+            raise RuntimeError("No Redis cluster nodes found.")
+
+        self.client = RedisCluster(
+            startup_nodes=startup_nodes,
+            decode_responses=True,
+            max_connections=int(self.config.get("redis_max_connections", 10))
+        )
+        await self.client.ping()
+        logger.info("Connected to Redis Cluster successfully.")
+
     def _discover_redis_cluster_nodes(self):
-        service = self.config.get("redis_cluster_service", "redis-cluster")
-        namespace = self.config.get("redis_namespace", "default")
-        port = int(self.config.get("redis_port", 6379))
+        full_host = self.config.get("REDIS_HOST", "redis-cluster.stocksblitz.svc.cluster.local")
+        port = int(self.config.get("REDIS_PORT", 6379))
+
+        if ENV.use_mocks or not os.getenv("KUBERNETES_SERVICE_HOST"):
+            logger.warning("Local/dev environment detected – using fallback localhost Redis.")
+            return [{"host": "localhost", "port": port}]
+
         try:
-            hosts = socket.gethostbyname_ex(f"{service}.{namespace}.svc.cluster.local")[2]
+            hosts = socket.gethostbyname_ex(full_host)[2]
             return [{"host": ip, "port": port} for ip in hosts]
         except Exception as e:
-            logging.error(f"Failed to discover Redis Cluster nodes: {e}")
+            logger.error(f"Failed to discover Redis Cluster nodes: {e}")
             return []
 
-    async def _initialize_redis(self):
+    async def get_connection(self):
+        if not self.client:
+            raise RuntimeError("Redis client is not initialized. Call `connect()` first.")
+        return self.client
+
+    async def health_check(self):
         try:
-            startup_nodes = self._discover_redis_cluster_nodes()
-            if not startup_nodes:
-                raise RuntimeError("No Redis cluster nodes found.")
-
-            self._redis_pool = RedisCluster(
-                startup_nodes=startup_nodes,
-                decode_responses=True,
-                max_connections=int(self.config.get("redis_max_connections", 10)),
-            )
-            await self._redis_pool.ping()
-            logging.info("Connected to Redis Cluster successfully.")
+            if self.client and await self.client.ping():
+                return {"status": "ok", "message": "Redis reachable"}
         except Exception as e:
-            logging.error(f"Redis Cluster connection failed during initialization: {e}")
-            self._redis_pool = None
-
-    async def get_redis_connection(self):
-        if not self._redis_pool:
-            logging.error("Redis cluster connection is not initialized.")
-            return None
-        try:
-            if not await self._redis_pool.ping():
-                logging.error("Redis cluster is unreachable.")
-                return None
-            return self._redis_pool
-        except Exception as e:
-            logging.error(f"Redis cluster ping failed: {e}")
-            return None
-
-    async def _initialize_timescaledb(self):
-        """
-        Initialize TimescaleDB connection pool.
-        """
-        try:
-            self._timescaledb_conn = TimescaleDBConnection(config=self.config)
-            if not self._timescaledb_conn.is_connected():
-                logging.warning("TimescaleDB connection failed during initialization.")
-        except Exception as e:
-            logging.error(f"Error initializing TimescaleDB connection: {e}")
-
-
-
-    def _initialize_rabbitmq(self):
-        """
-        Initialize RabbitMQ connection.
-        """
-        try:
-            self._rabbitmq_conn = RabbitMQConnection(config=self.config)
-            self._rabbitmq_conn.connect()
-            if not self._rabbitmq_conn.is_connected():
-                logging.warning("RabbitMQ connection failed during initialization.")
-        except Exception as e:
-            logging.error(f"Error initializing RabbitMQ connection: {e}")
-
-    async def _initialize_mongodb(self):
-        """
-        Initialize MongoDB connection.
-        """
-        try:
-            self._mongodb_conn = MongoDBConnection(config=self.config)
-            if not self._mongodb_conn.is_connected():
-                logging.warning("MongoDB connection failed during initialization.")
-        except Exception as e:
-            logging.error(f"MongoDB connection error: {e}")
-
-
-
-    def get_timescaledb_session(self):
-        """
-        Provides a database session from the TimescaleDB pool.
-        """
-        if not self._timescaledb_conn or not self._timescaledb_conn.is_connected():
-            logging.error("TimescaleDB connection is unavailable.")
-            return None
-        return self._timescaledb_conn.get_session()
-
-    def get_rabbitmq_connection(self):
-        """
-        Provides the RabbitMQ connection.
-        """
-        if not self._rabbitmq_conn or not self._rabbitmq_conn.is_connected():
-            logging.error("RabbitMQ connection is unavailable.")
-            return None
-        return self._rabbitmq_conn.get_connection()
-
-    def get_mongodb_connection(self):
-        """
-        Provides the MongoDB connection.
-        """
-        if not self._mongodb_conn or not self._mongodb_conn.is_connected():
-            logging.error("MongoDB connection is unavailable.")
-            return None
-        return self._mongodb_conn.get_database()
-
-    async def close_connections(self):
-        """
-        Closes all connections gracefully.
-        """
-        try:
-            if self._redis_pool:
-                await self._redis_pool.close()
-                logging.info("Redis connection pool closed.")
-
-            logging.info("All connections closed successfully.")
-        except Exception as e:
-            logging.error(f"Error closing connections: {e}")
-
-
-# Singleton instance of ConnectionManager
-connection_manager = None
-
-
-async def initialize_service(service_name: str, config: dict):
-    """
-    Initializes the ConnectionManager for shared resources.
-
-    Args:
-        service_name (str): The name of the microservice.
-        config (dict): The configuration for the service.
-    """
-    global connection_manager
-    if connection_manager is None:
-        connection_manager = AsyncConnectionManager(config=config)
-        await connection_manager.initialize()
-        logging.info(f"Service '{service_name}' initialized.")
+            return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Redis not initialized or unreachable"}

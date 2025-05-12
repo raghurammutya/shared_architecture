@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: shared-architecture
-Version: 0.3.0
+Version: 0.4.0
 Summary: A shared Python library for backend microservices, including models, utilities, and configurations.
 Home-page: https://github.com/raghurammutya/shared_architecture
 Author: Raghuram Mutya

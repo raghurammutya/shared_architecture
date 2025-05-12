@@ -3,6 +3,9 @@ import logging
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import create_engine
 
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from shared_architecture.config.config_loader import get_env
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -38,3 +41,31 @@ def get_db() -> Session:
     finally:
         logger.info("Closing database session")  # Debugging log
         db.close()
+
+DB_URL_ASYNC = get_env("TIMESCALEDB_URL_ASYNC", "postgresql+asyncpg://postgres:postgres@localhost:5432/stocksblitz")
+DB_URL_SYNC = get_env("TIMESCALEDB_URL", "postgresql://postgres:postgres@localhost:5432/stocksblitz")
+
+# === Async Engine (used for FastAPI + async ORM operations) ===
+async_engine = create_async_engine(
+    DB_URL_ASYNC,
+    echo=False,
+    pool_pre_ping=True,
+    future=True,
+)
+
+# Async session maker for FastAPI
+AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
+    bind=async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
+
+# === Sync Engine (used for Alembic migrations or blocking operations) ===
+sync_engine = create_engine(
+    DB_URL_SYNC,
+    pool_pre_ping=True,
+    future=True,
+)
+
+# Sync session maker
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, TIMESTAMP, Text, Double, BigInteger, Date
 from sqlalchemy.ext.declarative import declarative_base
-
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
 Base = declarative_base()
 
 class TickData(Base):
@@ -10,13 +10,13 @@ class TickData(Base):
     instrument_key = Column(Text, primary_key=True, nullable=False)
     interval = Column(Text, primary_key=True, nullable=False)
 
-    open = Column(Double)
-    high = Column(Double)
-    low = Column(Double)
-    close = Column(Double)
+    open = Column(TimezoneAwareDateTime())
+    high = Column(TimezoneAwareDateTime())
+    low = Column(TimezoneAwareDateTime())
+    close = Column(TimezoneAwareDateTime())
     volume = Column(BigInteger)
     oi = Column(BigInteger)
-    expirydate = Column(Date)
+    expirydate = Column(TimezoneAwareDateTime())
     option_type = Column(Text)
     strikeprice = Column(Double)
     

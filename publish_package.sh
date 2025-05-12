@@ -5,7 +5,7 @@ set -e
 
 PACKAGE_NAME="shared-architecture"
 GIT_BRANCH="main"
-VERSION="0.3.0"
+VERSION="0.4.0"
 
 echo "🚀 Starting publishing process for $PACKAGE_NAME v$VERSION..."
 

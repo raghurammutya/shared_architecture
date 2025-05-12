@@ -1,12 +1,10 @@
 import os
 import logging
 from pymongo import MongoClient
+from shared_architecture.config.config_loader import get_env
 from pymongo.errors import ConnectionFailure
 import pymongo
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
+logger = logging.getLogger(__name__)
 
 class MongoDBConnection:
     _client: MongoClient | None = None  # Class-level client
@@ -102,3 +100,25 @@ class MongoDBConnection:
             self._client.close()
             logging.info("MongoDB connection closed.")
             MongoDBConnection._client = None  # Reset the class-level client
+
+
+def get_live_mongo():
+    """
+    Establishes a connection to a MongoDB instance using env vars.
+    Returns the MongoClient object.
+    """
+    host = get_env("MONGO_HOST", "localhost")
+    port = get_env("MONGO_PORT", 27017, int)
+    username = get_env("MONGO_USER", None)
+    password = get_env("MONGO_PASSWORD", None)
+
+    logger.info(f"Connecting to MongoDB at {host}:{port}")
+
+    if username and password:
+        uri = f"mongodb://{username}:{password}@{host}:{port}/"
+    else:
+        uri = f"mongodb://{host}:{port}/"
+
+    client = MongoClient(uri)
+    logger.info("MongoDB connection established.")
+    return client

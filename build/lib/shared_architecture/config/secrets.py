@@ -3,63 +3,60 @@ import base64
 import json
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logger = logging.getLogger(__name__)
 
-def decode_secret(encoded_value):
+def decode_secret(encoded_value: str) -> str:
     """
     Decode a base64-encoded secret value.
-    Args:
-        encoded_value (str): Base64 encoded string.
-    Returns:
-        str: Decoded secret value.
     """
     try:
         return base64.b64decode(encoded_value).decode("utf-8")
     except Exception as e:
-        logging.error(f"Error decoding secret: {e}")
+        logger.error(f"Error decoding secret: {e}")
         raise ValueError("Failed to decode secret.")
 
 def get_secret(secret_name: str, key: str) -> str:
     """
-    Retrieve a specific secret from an environment variable or external source.
-    Args:
-        secret_name (str): The environment variable containing the secrets.
-        key (str): The specific key inside the secret to retrieve.
-    Returns:
-        str: Decoded secret value.
+    Retrieve a specific secret from an environment variable.
     """
     try:
-        secret_data = os.getenv(secret_name, "{}")  # Default to empty JSON object
-        secrets = json.loads(secret_data)          # Parse JSON data
-        encoded_value = secrets.get(key, None)     # Retrieve the specific key
+        secret_data = os.getenv(secret_name, "{}")
+        secrets = json.loads(secret_data)
+        encoded_value = secrets.get(key, None)
         if not encoded_value:
-            logging.warning(f"Secret key '{key}' not found in '{secret_name}'.")
+            logger.warning(f"Secret key '{key}' not found in '{secret_name}'.")
             return None
-        return decode_secret(encoded_value)        # Decode the base64-encoded secret
+        return decode_secret(encoded_value)
     except Exception as e:
-        logging.error(f"Error retrieving secret '{key}' from '{secret_name}': {e}")
+        logger.error(f"Error retrieving secret '{key}' from '{secret_name}': {e}")
         raise ValueError("Failed to retrieve secret.")
 
 def validate_secrets(required_keys: list, secret_name: str) -> None:
     """
-    Validate if all required secret keys are available in the environment.
-    Args:
-        required_keys (list): List of keys to validate.
-        secret_name (str): The environment variable containing the secrets.
-    Raises:
-        RuntimeError: If any required key is missing.
+    Validate if all required secret keys are present.
     """
     try:
         secret_data = os.getenv(secret_name, "{}")
         secrets = json.loads(secret_data)
         for key in required_keys:
             if key not in secrets:
-                logging.error(f"Missing required secret key: {key} in {secret_name}")
+                logger.error(f"Missing required secret key: {key} in {secret_name}")
                 raise RuntimeError(f"Required secret key '{key}' is missing.")
-        logging.info(f"All required keys validated successfully in {secret_name}.")
+        logger.info(f"All required keys validated successfully in {secret_name}.")
     except Exception as e:
-        logging.error(f"Error validating secrets in {secret_name}: {e}")
+        logger.error(f"Error validating secrets in {secret_name}: {e}")
         raise RuntimeError("Failed to validate secrets.")
+
+def get_k8s_secret(key: str, default: str = None) -> str:
+    """
+    Retrieve a Kubernetes Secret mounted as a file.
+    """
+    try:
+        path = f"/var/run/secrets/{key}"
+        if os.path.exists(path):
+            with open(path, "r") as f:
+                return f.read().strip()
+        return os.getenv(key, default)
+    except Exception as e:
+        logger.error(f"Failed to read Kubernetes Secret {key}: {e}")
+        return default

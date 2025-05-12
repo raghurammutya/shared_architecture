@@ -16,6 +16,7 @@ shared_architecture/config/config_manager.py
 shared_architecture/config/secrets.py
 shared_architecture/connections/__init__.py
 shared_architecture/connections/base_connection.py
+shared_architecture/connections/connection_manager.py
 shared_architecture/connections/health_check.py
 shared_architecture/connections/mongodb.py
 shared_architecture/connections/rabbitmq.py
@@ -56,9 +57,11 @@ shared_architecture/mocks/timescaledb_mock.py
 shared_architecture/utils/__init__.py
 shared_architecture/utils/custom_types.py
 shared_architecture/utils/datetime_utils.py
+shared_architecture/utils/health_check_utils.py
 shared_architecture/utils/keycloak_helper.py
 shared_architecture/utils/logging_utils.py
 shared_architecture/utils/other_helpers.py
+shared_architecture/utils/prometheus_metrics.py
 shared_architecture/utils/rabbitmq_helper.py
 shared_architecture/utils/redis_batch_reader.py
 shared_architecture/utils/redis_batch_writer.py
