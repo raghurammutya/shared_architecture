@@ -1,144 +1,83 @@
 import os
 import logging
-import psycopg2
-from sqlalchemy.orm import sessionmaker,Session
-from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.engine.url import URL
-import asyncpg
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.sql import text
+from shared_architecture.config.config_loader import get_env
+from shared_architecture.mocks.timescaledb_mock import get_mock_timescaledb_session
 
-logging.basicConfig(
- level=logging.INFO,
- format="%(asctime)s - %(levelname)s - %(message)s",
-)
-logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)  # Enable SQLAlchemy logging
-logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)    # Enable connection pool logging
+logger = logging.getLogger(__name__)
 
-class TimescaleDBConnection:
-  def __init__(self, config: dict):
+__all__ = [
+    "get_timescaledb_session",
+    "get_timescaledb_client",
+    "close_timescaledb_client",
+    "test_timescaledb_connection",
+    "run_query"
+]
+
+# --- Singleton Containers ---
+_engine = None
+_SessionFactory = None
+_timescaledb_client = None
+
+def get_timescaledb_session() -> async_sessionmaker[AsyncSession]:
+    global _engine, _SessionFactory
+
+    if _SessionFactory:
+        return _SessionFactory
+
+    use_mocks = get_env("USE_MOCKS", default=False)
+    if use_mocks:
+        logger.warning("[TimescaleDB] Using TimescaleDBMock due to USE_MOCKS=true")
+        _SessionFactory = get_mock_timescaledb_session()
+        return _SessionFactory
+
+    db_user = get_env("TIMESCALEDB_USER", default="tradmin")
+    db_pass = get_env("TIMESCALEDB_PASSWORD", default="tradpass")
+    db_host = get_env("TIMESCALEDB_HOST", default="localhost")
+    db_port = get_env("TIMESCALEDB_PORT", default="5432")
+    db_name = get_env("TIMESCALEDB_DB", default="tradingdb")
+
+    db_url = f"postgresql+asyncpg://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+    logger.info(f"[TimescaleDB] Connecting to {db_url}")
+
+    _engine = create_async_engine(db_url, echo=False, pool_pre_ping=True)
+    _SessionFactory = async_sessionmaker(bind=_engine, class_=AsyncSession, expire_on_commit=False)
+    return _SessionFactory
+
+async def get_timescaledb_client() -> AsyncSession:
+    global _timescaledb_client
+
+    if _timescaledb_client:
+        return _timescaledb_client
+
+    session_factory = get_timescaledb_session()
+    _timescaledb_client = session_factory()
+    logger.info("[TimescaleDB] Created new AsyncSession")
+    return _timescaledb_client
+
+async def close_timescaledb_client():
+    global _timescaledb_client
+    if _timescaledb_client:
+        await _timescaledb_client.close()
+        logger.info("[TimescaleDB] AsyncSession closed")
+        _timescaledb_client = None
+
+async def test_timescaledb_connection(session: AsyncSession):
+    try:
+        result = await session.execute(text("SELECT 1"))
+        row = result.fetchone()
+        if row:
+            logger.info(f"✅ TimescaleDB connection OK: {row[0]}")
+        else:
+            logger.error("❌ TimescaleDB connected but no result from SELECT 1")
+    except Exception as e:
+        logger.error(f"❌ TimescaleDB connection test failed: {e}")
+
+async def run_query(query: str) -> list:
     """
-    Initialize TimescaleDB connection.
-
-    Args:
-    config (dict): Configuration dictionary.
+    Utility to run raw SQL for debugging or scripting.
     """
-    self.config = config #.get("services", {}).get("TickerService", {})  # Adjust service name!
-    if not self.config:
-        raise ValueError("TimescaleDB configuration not found")
-    self.engine = self._create_engine()
-    #self.SessionLocal = self._create_session_maker()
-    self.connected = self.engine is not None  # Track connection status
-    logging.info(f"TimescaleDBConnection initialized with config: {self.config}")
-
-
-  async def check_timescaledb_health():
-      try:
-          conn = await asyncpg.connect(
-              user=os.getenv("POSTGRES_USER"),
-              password=os.getenv("POSTGRES_PASSWORD"),
-              database=os.getenv("POSTGRES_DB"),
-              host=os.getenv("POSTGRES_HOST"),
-              port=int(os.getenv("POSTGRES_PORT")),
-          )
-          await conn.execute("SELECT 1;")
-          await conn.close()
-          return {"status": "healthy"}
-      except Exception as e:
-          return {"status": "unhealthy", "error": str(e)}
-
-
-  # def _create_engine(self):
-  #   """
-  #   Creates the SQLAlchemy engine, handling connection errors.
-  #   """
-  #   db_url = self._get_database_url()
-  #   try:
-  #     engine = create_engine(
-  #       db_url,
-  #       pool_size=int(self.config.get("pool_size", 10)),
-  #       max_overflow=int(self.config.get("max_overflow", 5)),
-  #       pool_timeout=int(self.config.get("pool_timeout", 30)),
-  #       pool_recycle=int(self.config.get("pool_recycle", 1800)),
-  #     )
-  #     engine.connect()  # Try to connect immediately
-  #     return engine
-  #   except SQLAlchemyError as e:
-  #     logging.error(f"Error connecting to TimescaleDB: {e}")
-  #     return None  # Return None on failure
-
-  def _create_session_maker(self):
-    """
-    Creates the SQLAlchemy session maker.
-    """
-    if self.engine:
-      return sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
-    else:
-      return None
-
-  def _get_database_url(self) -> str:
-    """
-    Constructs the database URL from configuration.
-    """
-    return (
-      f"postgresql://{self.config.get('postgres_user')}:"
-      f"{self.config.get('postgres_password')}@"
-      f"{self.config.get('postgres_host')}:"
-      f"{self.config.get('postgres_port')}/"
-      f"{self.config.get('postgres_database')}"
-      )
-
-  def get_session(self):
-    """
-    Provides a database session if connected, otherwise None.
-    """
-    if self.engine:
-      return Session(self.engine)
-    else:
-      logging.warning("TimescaleDB session requested, but connection is unavailable.")
-      return None
-
-  def is_connected(self):
-    """
-    Returns True if the connection is established, False otherwise.
-    """
-    return self.connected
-
-  def close(self):
-    """
-    Closes the connection.
-    """
-    if self.engine:
-      self.engine.dispose()  # Dispose of the engine
-      logging.info("TimescaleDB connection closed.")
-    
-  def _create_engine(self):
-      db_config = self.config #.get("services", {}).get("TickerService", {})
-      if not db_config:
-          raise ValueError("TimescaleDB configuration not found")
-
-      host = db_config.get("postgres_host")
-      port = db_config.get("postgres_port")
-      user = db_config.get("postgres_user")
-      password = db_config.get("postgres_password")
-      database = db_config.get("postgres_database")
-
-      if not all([host, port, user, password, database]):
-          raise ValueError("Incomplete TimescaleDB configuration")
-      url_str = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
-      # url = URL.create(
-      #     "postgresql+psycopg2",
-      #     username=user,
-      #     password=password,
-      #     host=host,
-      #     port=port,
-      #     database=database
-      # )
-
-      # Log the URL just before creating the engine
-      logging.info(f"SQLAlchemy URL: {url_str}")
-
-      engine = create_engine(url_str)
-      return engine
-
-  def get_engine(self):
-      return self.engine
+    async with get_timescaledb_session()() as session:
+        result = await session.execute(text(query))
+        return result.fetchall()

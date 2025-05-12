@@ -2,7 +2,7 @@
 from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
-
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
 Base = declarative_base()
 
 class PositionModel(Base):
@@ -37,7 +37,7 @@ class PositionModel(Base):
     trading_account = Column(String)
     type = Column(String)
     unrealised_pnl = Column(Float)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(TimezoneAwareDateTime(), default=datetime.utcnow)
     instrument_key = Column(String, ForeignKey('symbols.instrument_key'))
     strategy_id = Column(String)
     source_strategy_id = Column(String, nullable=True)

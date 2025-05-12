@@ -1,17 +1,30 @@
 
+C:\stocksblitz\shared_architecture\conftest.py:
+
+# conftest.py
+
+import os
+import pytest
+
+@pytest.fixture(scope="session", autouse=True)
+def enforce_mock_mode():
+    """
+    Automatically enable mock mode for all tests in this session.
+    """
+    os.environ["USE_MOCKS"] = "true"
 C:\stocksblitz\shared_architecture\setup.py:
 
 from setuptools import setup, find_packages
 
 setup(
-    name="shared_architecture",  # Replace with your package name
-    version="0.2.3",  # Increment version appropriately
-    description="A shared library for backend services, including models, utilities, and configurations",
+    name="shared-architecture",  # Your published PyPI package name
+    version="0.3.0",  # 🚀 New version
+    description="A shared Python library for backend microservices, including models, utilities, and configurations.",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     author="Raghuram Mutya",
     author_email="raghu.mutya@gmail.com",
-    url="https://pypi.org/project/shared-models-stocksblitz/",  # Replace with your repository URL
+    url="https://github.com/raghurammutya/shared_architecture",  # GitHub link
     packages=find_packages(include=["shared_architecture", "shared_architecture.*"]),
     include_package_data=True,
     install_requires=[
@@ -22,553 +35,19 @@ setup(
         "requests>=2.25",
         "pytest>=7.0",
         "pydantic>=1.10",
-        "circuitbreaker>=1.3"
+        "circuitbreaker>=1.3",
     ],
     python_requires=">=3.8",
-    keywords="shared library architecture configuration connections enums backend",  # Add relevant keywords
-
+    keywords="shared library microservices architecture configuration utilities",
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Operating System :: OS Independent",
+        "License :: OSI Approved :: MIT License"
+    ],
 )
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\__init__.py:
 
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\config\common.py:
-
-import os
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
-def get_common_config() -> dict:
-    """
-    Fetch common configuration from environment variables.
-    """
-    try:
-        common_config_keys = [
-            "DATABASE_HOST", "DATABASE_PORT", 
-            "POSTGRES_HOST", "POSTGRES_PORT"
-        ]
-        common_config = {key: os.getenv(key) for key in common_config_keys if os.getenv(key)}
-        logging.info(f"Common Config Retrieved: {common_config}")
-        return common_config
-    except Exception as e:
-        logging.error(f"Error fetching common config: {e}")
-        return {}
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\config\scoped.py:
-
-import os
-import json
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
-def get_scoped_config(configmap_name: str) -> dict:
-    """
-    Fetch service-specific scoped configuration from environment variables.
-    """
-    try:
-        scoped_config_data = os.getenv(configmap_name, "{}")
-        scoped_config = json.loads(scoped_config_data)
-        logging.info(f"Scoped Config Retrieved for {configmap_name}: {scoped_config}")
-        return scoped_config
-    except json.JSONDecodeError as e:
-        logging.error(f"Error decoding scoped ConfigMap data for {configmap_name}: {e}")
-        return {}
-    except Exception as e:
-        logging.error(f"Error fetching scoped configuration: {e}")
-        return {}
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\config\secrets.py:
-
-import os
-import base64
-import logging
-import json
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
-def decode_secret(encoded_value: str) -> str:
-    """
-    Decode a base64-encoded secret.
-    """
-    try:
-        return base64.b64decode(encoded_value).decode("utf-8")
-    except Exception as e:
-        logging.error(f"Error decoding secret: {e}")
-        return ""
-
-def get_secure_config(secret_name: str, key: str) -> str:
-    """
-    Fetch secure configuration for a specific key from Secrets.
-    """
-    try:
-        secret_data = os.getenv(secret_name, "{}")
-        secrets = json.loads(secret_data)
-        encoded_value = secrets.get(key)
-        if encoded_value:
-            return decode_secret(encoded_value)
-        else:
-            raise ValueError(f"Key {key} not found in Secrets.")
-    except Exception as e:
-        logging.error(f"Error fetching secure config for {key}: {e}")
-        return ""
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\config\__init__.py:
-
-from .common import get_common_config
-from .scoped import get_scoped_config
-from .secrets import get_secure_config, decode_secret
-
-__all__ = ["get_common_config", "get_scoped_config", "get_secure_config", "decode_secret"]
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\models\broker.py:
-
-from sqlalchemy import create_engine, Column,Boolean, Integer, Float,String, Date, DateTime, ForeignKey, UniqueConstraint, Text
-from ticker.database import Base
-import datetime 
-class Broker(Base):
-    __tablename__ = 'brokers'
-    __table_args__ = {'schema': 'tradingdb'} 
-    id = Column(Integer, primary_key=True)
-    broker_name = Column(Text)
-    login_url = Column(Text)
-    api_key = Column(Text)
-    api_secret = Column(Text)
-    username = Column(Text)
-    password = Column(Text)
-    totp_key = Column(Text)
-    session_key = Column(Text)
-    session_key_date = Column(Date)
-    symbol_url = Column(Text)
-    status = Column(Text)
-    session_starttime = Column(DateTime) # Using DateTime for precise time
-    session_token = Column(Text)
-    live_status = Column(Text)
-    subscription_limit = Column(Integer)
-    daily_api_limit = Column(Integer)
-    minute_api_limit = Column(Integer)
-    records_per_api_requests = Column(Integer)
-    last_api_call_time = Column(DateTime, default=datetime.datetime.now)
-    minute_api_requests = Column(Integer, default=0)
-
-    # Unique constraint
-    __table_args__ = (UniqueConstraint('broker_name', 'username', name='uix_broker_username'),)
-
-
-    def __repr__(self):
-        return f"<Broker(broker_name='{self.broker_name}', username='{self.username}')>"
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\models\historical_data.py:
-
-from sqlalchemy import Column, TIMESTAMP, Text, Double, BigInteger, Date
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
-
-class HistoricalData(Base):
-    __tablename__ = 'historical_data'
-
-    time = Column(TIMESTAMP(timezone=True), primary_key=True, nullable=False)
-    instrument_key = Column(Text, primary_key=True, nullable=False)
-    interval = Column(Text, primary_key=True, nullable=False)
-
-    open = Column(Double)
-    high = Column(Double)
-    low = Column(Double)
-    close = Column(Double)
-    volume = Column(BigInteger)
-    oi = Column(BigInteger)
-    expirydate = Column(Date)
-    option_type = Column(Text)
-    strikeprice = Column(Double)
-    
-    # Greeks data columns
-    greeks_open_IV = Column(Double)
-    greeks_open_delta = Column(Double)
-    greeks_open_gamma = Column(Double)
-    greeks_open_theta = Column(Double)
-    greeks_open_rho = Column(Double)
-    greeks_open_vega = Column(Double)
-
-    greeks_high_IV = Column(Double)
-    greeks_high_delta = Column(Double)
-    greeks_high_gamma = Column(Double)
-    greeks_high_theta = Column(Double)
-    greeks_high_rho = Column(Double)
-    greeks_high_vega = Column(Double)
-
-    greeks_low_IV = Column(Double)
-    greeks_low_delta = Column(Double)
-    greeks_low_gamma = Column(Double)
-    greeks_low_theta = Column(Double)
-    greeks_low_rho = Column(Double)
-    greeks_low_vega = Column(Double)
-
-    greeks_close_IV = Column(Double)
-    greeks_close_delta = Column(Double)
-    greeks_close_gamma = Column(Double)
-    greeks_close_theta = Column(Double)
-    greeks_close_rho = Column(Double)
-    greeks_close_vega = Column(Double)
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\models\symbol.py:
-
-from sqlalchemy import create_engine, Column,Boolean, Integer, Float,String, Date, DateTime, ForeignKey, UniqueConstraint, Text
-from ..database import Base
-class Symbol(Base):
-    __tablename__ = "symbols"
-
-    instrument_key = Column(String, primary_key=True)
-    stock_token = Column(String)
-    instrumentname = Column(String)
-    stock_code = Column(String)
-    series = Column(String)
-    expirydate = Column(Date) # Changed to Date
-    strikeprice = Column(Float)
-    optiontype = Column(String)
-    calevel = Column(String)
-    permittedtotrade = Column(Boolean) # Changed to Boolean
-    issuecapital = Column(Float)
-    warningqty = Column(Integer)
-    freezeqty = Column(Integer)
-    creditrating = Column(String)
-    normalmarketstatus = Column(String)
-    oddlotmarketstatus = Column(String)
-    spotmarketstatus = Column(String)
-    auctionmarketstatus = Column(String)
-    normalmarketeligibility = Column(String)
-    oddlotmarketeligibility = Column(String)
-    spotmarketeligibility = Column(String)
-    auctionmarketeligibility = Column(String)
-    scripid = Column(String)
-    issuerate = Column(Float)
-    issuestartdate = Column(Date)
-    interestpaymentdate = Column(Date)
-    issuematuritydate = Column(Date)
-    marginpercentage = Column(Float)
-    minimumlotqty = Column(Integer)
-    lotsize = Column(Integer)
-    ticksize = Column(Float)
-    companyname = Column(String)
-    listingdate = Column(Date)
-    expulsiondate = Column(Date)
-    readmissiondate = Column(Date)
-    recorddate = Column(Date)
-    lowpricerange = Column(Float)
-    highpricerange = Column(Float)
-    securityexpirydate = Column(Date)
-    nodeliverystartdate = Column(Date)
-    nodeliveryenddate = Column(Date)
-    mf = Column(String)
-    aon = Column(String)
-    participantinmarketindex = Column(String)
-    bookclsstartdate = Column(Date)
-    bookclsenddate = Column(Date)
-    excercisestartdate = Column(Date)
-    excerciseenddate = Column(Date)
-    oldtoken = Column(String)
-    assetinstrument = Column(String)
-    assetname = Column(String)
-    assettoken = Column(Integer)
-    intrinsicvalue = Column(Float)
-    extrinsicvalue = Column(Float)
-    excercisestyle = Column(String)
-    egm = Column(String)
-    agm = Column(String)
-    interest = Column(String)
-    bonus = Column(String)
-    rights = Column(String)
-    dividends = Column(String)
-    exallowed = Column(String)
-    exrejectionallowed = Column(Boolean) # Changed to Boolean
-    plallowed = Column(Boolean) # Changed to Boolean
-    isthisasset = Column(Boolean) # Changed to Boolean
-    iscorpadjusted = Column(Boolean) # Changed to Boolean
-    localupdatedatetime = Column(DateTime)
-    deleteflag = Column(Boolean) # Changed to Boolean
-    remarks = Column(String)
-    baseprice = Column(Float)
-    exchangecode = Column(String)
-    expirydate = Column(DateTime)
-    exchange_code = Column(String)
-    product_type = Column(String)
-
-    __table_args__ = (UniqueConstraint('instrument_key'),)
-
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\models\symbol_update.py:
-
-
-from sqlalchemy import create_engine, Column,Boolean, Integer, Float,String, Date, DateTime, ForeignKey, UniqueConstraint, Text
-from database import Base
-class SymbolUpdateStatus(Base):
-    __tablename__ = "symbols_update_status"
-    broker_name = Column(String, primary_key=True)
-    update_date = Column(Date, primary_key=True)
-    update_time = Column(DateTime)
-    
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\models\tick_data.py:
-
-from sqlalchemy import Column, TIMESTAMP, Text, Double, BigInteger, Date
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
-
-class TickData(Base):
-    __tablename__ = 'tick_data'
-
-    time = Column(TIMESTAMP(timezone=True), primary_key=True, nullable=False)
-    instrument_key = Column(Text, primary_key=True, nullable=False)
-    interval = Column(Text, primary_key=True, nullable=False)
-
-    open = Column(Double)
-    high = Column(Double)
-    low = Column(Double)
-    close = Column(Double)
-    volume = Column(BigInteger)
-    oi = Column(BigInteger)
-    expirydate = Column(Date)
-    option_type = Column(Text)
-    strikeprice = Column(Double)
-    
-    # Greeks data columns
-    greeks_open_IV = Column(Double)
-    greeks_open_delta = Column(Double)
-    greeks_open_gamma = Column(Double)
-    greeks_open_theta = Column(Double)
-    greeks_open_rho = Column(Double)
-    greeks_open_vega = Column(Double)
-
-    greeks_high_IV = Column(Double)
-    greeks_high_delta = Column(Double)
-    greeks_high_gamma = Column(Double)
-    greeks_high_theta = Column(Double)
-    greeks_high_rho = Column(Double)
-    greeks_high_vega = Column(Double)
-
-    greeks_low_IV = Column(Double)
-    greeks_low_delta = Column(Double)
-    greeks_low_gamma = Column(Double)
-    greeks_low_theta = Column(Double)
-    greeks_low_rho = Column(Double)
-    greeks_low_vega = Column(Double)
-
-    greeks_close_IV = Column(Double)
-    greeks_close_delta = Column(Double)
-    greeks_close_gamma = Column(Double)
-    greeks_close_theta = Column(Double)
-    greeks_close_rho = Column(Double)
-    greeks_close_vega = Column(Double)
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\models\__init__.py:
-
-"""
-This module initializes and consolidates all database models for the shared architecture.
-"""
-
-from .broker import Broker
-from .symbol import Symbol
-from .historical_data import HistoricalData
-from .tick_data import TickData
-from .symbol_update import SymbolUpdateStatus
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\startup\database_migration.py:
-
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\startup\initialize_services.py:
-
-import pika
-import logging
-from shared_architecture.config import shared_config
-from shared_architecture.utils import get_common_config
-from shared_architecture.utils import get_scoped_config
-def connect_rabbitmq():
-    try:
-        config_map_data = shared_config.fetch_config()
-        logging.info("Connecting to RabbitMQ...")
-        parameters = pika.URLParameters(config_map_data.get("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"))
-        connection = pika.BlockingConnection(parameters)
-        logging.info("RabbitMQ connection established")
-        return connection
-    except Exception as e:
-        logging.error(f"Failed to connect to RabbitMQ: {e}")
-        raise RuntimeError("Unable to connect to RabbitMQ")
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\startup\__init__.py:
-
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\utils\api_utils.py:
-
-import requests
-import logging
-from circuitbreaker import circuit
-import traceback
-
-class ApiHandler:
-    def __init__(self, config, session=None):
-        self.config = config
-        self.session = session
-
-    @circuit(failure_threshold=3, recovery_timeout=30)
-    def execute(self, service_instance, api_function, pre_hook=None, post_hook=None, **kwargs):
-        try:
-            # Execute pre-hook if provided
-            if pre_hook:
-                pre_hook()
-
-            # Service instance-based API call
-            if service_instance:
-                return self._handle_service_call(service_instance, api_function, **kwargs)
-
-            # HTTP API call
-            return self._handle_http_call(api_function, **kwargs)
-
-        except Exception as e:
-            logging.error(f"API execution failed: {e}")
-            traceback.print_exc()
-            raise
-        finally:
-            if post_hook:
-                post_hook()
-
-    def _handle_service_call(self, service_instance, api_function, **kwargs):
-        try:
-            logging.info(f"Calling service API: {api_function} with params: {kwargs}")
-            response = getattr(service_instance, api_function)(**kwargs)
-            return response
-        except Exception as e:
-            logging.error(f"Service API call failed: {e}")
-            raise
-
-    def _handle_http_call(self, api_function, **kwargs):
-        headers = {"Content-Type": "application/json"}
-        payload = {"action": api_function, "data": kwargs}
-
-        try:
-            logging.info(f"Making HTTP POST request with payload: {payload}")
-            response = requests.post(self.config.get("url_with_port"), headers=headers, json=payload)
-            response.raise_for_status()  # Raise for HTTP errors
-
-            if response.headers.get("Content-Type") == "application/json":
-                return response.json()
-
-            return response.text
-
-        except requests.RequestException as e:
-            logging.error(f"HTTP API call failed: {e}")
-            raise
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\utils\date_utils.py:
-
-import logging
-from datetime import datetime
-from zoneinfo import ZoneInfo
-
-
-
-class CustomDate:
-    def __init__(self, in_date):
-        self.date, self.time, self.datetime, self.datetime_Z = (None,) * 4
-        if not self.is_empty(in_date):
-            self.datetime, self.datetime_Z = self.process_datetimes(in_date)
-            if self.datetime:
-                self.date = self.datetime.date()
-
-    def add_timezone(self, dt_obj):
-        if not isinstance(dt_obj, datetime) or dt_obj is None:
-            return None
-
-        ist_timezone = ZoneInfo("Asia/Kolkata")
-        return dt_obj.astimezone(ist_timezone)
-
-    def recognize_and_convert_dt(self, date_str):
-        formats = ['%Y-%m-%dT%H:%M:%S.%f', '%d-%b-%Y', '%Y-%m-%d %H:%M:%S.%f', '%d-%m-%Y', '%Y-%m-%d']
-        for fmt in formats:
-            try:
-                date_obj = datetime.strptime(date_str, fmt)
-                return self.add_timezone(date_obj)
-            except ValueError:
-                continue
-        return None
-
-    def convert_to_iso_z(self, dt_obj):
-        return dt_obj.strftime('%Y-%m-%dT%H:%M:%S.000Z') if dt_obj else None
-
-    @staticmethod
-    def is_empty(date_obj):
-        return not date_obj.strip() if isinstance(date_obj, str) else date_obj is None
-
-    def process_datetimes(self, date_str):
-        if isinstance(date_str, str):
-            dt_obj = self.recognize_and_convert_dt(date_str)
-        elif isinstance(date_str, datetime):
-            dt_obj = self.add_timezone(date_str)
-        else:
-            return None, None
-
-        return dt_obj, self.convert_to_iso_z(dt_obj)
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\utils\symbol_utils.py:
-
-import re
-import json
-from datetime import datetime
-import logging
-
-class ProductType:
-    EQUITIES = "equities"
-    FUTURES = "futures"
-    OPTIONS = "options"
-
-class Broker_Name:
-    BREEZE = "BREEZE"
-    ZERODHA = "ZERODHA"
-
-class TickerException(Exception):
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
-
-class Symbol:
-    right_mapping = {"call": "C", "put": "P", "CE": "C", "PE": "P"}
-
-    def __init__(self, instrument_key=None, **kwargs):
-        self.stock_code = kwargs.get('stock_code', '')
-        self.expirydate = kwargs.get('expirydate', '')
-        self.right = kwargs.get('right', '')
-        self.strikeprice = kwargs.get('strikeprice', '')
-        self.product_type = kwargs.get('product_type', '')
-
-        if instrument_key:
-            self.instrument_key = instrument_key
-
-    @property
-    def instrument_key(self):
-        if self.product_type == ProductType.EQUITIES:
-            return f"{self.stock_code}:{ProductType.EQUITIES}"
-        elif self.product_type == ProductType.FUTURES:
-            return f"{self.stock_code}:{ProductType.FUTURES}:{self.expirydate}"
-        elif self.product_type == ProductType.OPTIONS:
-            return f"{self.stock_code}:{ProductType.OPTIONS}:{self.expirydate}:{self.right}:{self.strikeprice}"
-
-    @instrument_key.setter
-    def instrument_key(self, key):
-        parts = key.split(":")
-        if len(parts) < 3:
-            raise ValueError("Invalid instrument key format.")
-        self.stock_code, self.product_type, *optional = parts
-        if self.product_type == ProductType.FUTURES:
-            self.expirydate = optional[0]
-        elif self.product_type == ProductType.OPTIONS:
-            self.expirydate, self.right, self.strikeprice = optional[:3]
-
-    @classmethod
-    def from_broker(cls, symbol_str, broker):
-        if broker == Broker_Name.ZERODHA:
-            # Parse Zerodha-specific formats here
-            pass
-        elif broker == Broker_Name.BREEZE:
-            # Parse Breeze-specific formats here
-            pass
-        else:
-            raise ValueError(f"Unsupported broker: {broker}")
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\build\lib\utils\__init__.py:
-
-from .api_utils import ApiHandler
-from .date_utils import CustomDate
-from .symbol_utils import Symbol, ProductType, Broker_Name, TickerException
-
-__all__ = ["ApiHandler", "CustomDate", "Symbol", "ProductType", "Broker_Name", "TickerException"]
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\config\common.py:
 
 """
@@ -582,8 +61,8 @@ import os
 import logging
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+level=logging.INFO,
+format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
 # Shared global configuration
@@ -592,41 +71,35 @@ shared_config = {
     "DATABASE_PORT": os.getenv("DATABASE_PORT", "5432"),
     "POSTGRES_HOST": os.getenv("POSTGRES_HOST", "localhost"),
     "POSTGRES_PORT": os.getenv("POSTGRES_PORT", "5432"),
-}
+    }
 
 # Helper to retrieve specific configurations
 def get_shared_config() -> dict:
     """
     Returns the shared configuration after logging.
     """
-    try:
-        logging.info("Shared Config Retrieved: %s", shared_config)
-        return shared_config
-    except (KeyError, ValueError) as e:
-        logging.error("Error retrieving shared configuration: %s", e)
-        return {}
-    
+    logging.info("Retrieving Shared Config:")
+    for key, value in shared_config.items():
+        logging.info(f" {key}: {value} (Source: env or default)")
+    return shared_config
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\config\config_manager.py:
-
-"""
-Config Manager Module
-
-This module provides functionality to manage service-specific configurations,
-retrieve them dynamically, and handle loading from environment variables,
-ConfigMaps, or Secrets.
-
-Classes:
-    - ConfigManager: Manages configuration retrieval for services.
-"""
 
 import os
 import logging
+from typing import Dict, Any
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+level=logging.INFO,
+format="%(asctime)s - %(levelname)s - %(message)s",
 )
-
+DEFAULT_POSTGRES_HOST = "localhost"
+DEFAULT_POSTGRES_PORT = 5432
+DEFAULT_RABBITMQ_URL = "amqp://guest:guest@localhost:5672/"
+DEFAULT_REDIS_HOST = "localhost"
+DEFAULT_REDIS_PORT = 6379
+DEFAULT_MONGO_URI = "mongodb://mongo:27017/mydatabase"
+DEFAULT_TICKER_SERVICE_API_KEY = "dummy_api_key"
+DEFAULT_ADMIN_API_PAGE_SIZE = 20
 class ConfigManager:
     """
     Manages service-specific configuration retrieval.
@@ -636,129 +109,143 @@ class ConfigManager:
     management across services.
     """
 
-    def __init__(self, service_name: str, config_data: dict = None):
+    def __init__(self, service_name: str):
         """
-        Initialize ConfigManager with the service name and optional configuration data.
+        Initialize ConfigManager with the service name.
 
         Args:
-            service_name (str): The name of the service.
-            config_data (dict, optional): A dictionary containing initial configurations.
+        service_name (str): The name of the service.
         """
         self.service_name = service_name
-        self.config_data = config_data or self.load_config()
+        #self.config = self._load_config()
+        self.common_config = self._load_common_config() # Load common config
+        print(f"common config: {self.common_config}")
+        self.service_config = self._load_service_config() # Load service-specific config
+        print(f"service_config: {self.service_config}")
+        self.config = self._merge_configs() # Merge them
 
     def get_service_configs(self) -> dict:
         """
         Retrieve service-specific configurations.
 
         Returns:
-            dict: A dictionary of service configurations.
+        dict: A dictionary of service configurations.
         """
-        service_configs = self.config_data.get("services", {}).get(self.service_name, {})
+        service_configs = self.config.get("services", {}).get(self.service_name, {})
         if not service_configs:
-            logging.warning("No specific configurations found for service '%s'", self.service_name)
+            logging.warning(f"No specific configurations found for service '{self.service_name}'")
         return service_configs
 
-    def load_config(self) -> dict:
+    def _is_running_in_kubernetes(self) -> bool:
         """
-        Load the service-specific configuration from environment variables.
+        Detects if the code is running inside a Kubernetes pod.
+        """
+        return os.getenv("KUBERNETES_SERVICE_HOST") is not None
+
+    def _load_common_config(self) -> dict:
+        """
+        Loads the common configuration.
+        
 
         Returns:
-            dict: Configuration data loaded from the environment.
+        dict: Common configuration data.
         """
-        config_data = {
-            "POSTGRES_USER": os.getenv("POSTGRES_USER", "traduser"),
-            "POSTGRES_HOST": os.getenv("POSTGRES_HOST", "localhost"),
-            "POSTGRES_PASSWORD": os.getenv("POSTGRES_PASSWORD", "tradpass"),
-            "POSTGRES_PORT": os.getenv("POSTGRES_PORT", "5432"),
-            "POSTGRES_DATABASE": os.getenv("POSTGRES_DATABASE", "timescaledb"),
-            "RABBITMQ_URL": os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
-            "REDIS_HOST": os.getenv("REDIS_HOST", "localhost"),
-            "REDIS_PORT": os.getenv("REDIS_PORT", "6379"),
+        config = {
+        "postgres_user": os.getenv("SHARED_POSTGRES_USER", "tradmin"),
+        "postgres_password": os.getenv("SHARED_POSTGRES_PASSWORD", "tradpass"),
+        "postgres_host": os.getenv("SHARED_POSTGRES_HOST", "localhost"),
+        "postgres_port": int(os.getenv("SHARED_POSTGRES_PORT", "5432")),
+        "postgres_database": os.getenv("SHARED_POSTGRES_PORT", "tradingdb"),
+        "rabbitmq_url": os.getenv("SHARED_RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"),
+        "redis_host": os.getenv("SHARED_REDIS_HOST", "localhost"),
+        "redis_port": int(os.getenv("SHARED_REDIS_PORT", "6379")),
+        "mongo_uri": os.getenv(
+        "SHARED_MONGO_URI",
+        f"mongodb://{os.getenv('SHARED_MONGO_HOST', 'localhost')}:"
+        f"{int(os.getenv('SHARED_MONGO_PORT', '27017'))}/"
+        f"{os.getenv('SHARED_MONGO_DATABASE', 'mydatabase')}"
+        ),
+        "mongo_user": os.getenv("SHARED_MONGO_USER", "tradmin"),
+        "mongo_password": os.getenv("SHARED_MONGO_PASSWORD", "tradpass"),
+        "mongo_host": os.getenv("SHARED_MONGO_HOST", "localhost"),
+        "mongo_port": int(os.getenv("SHARED_MONGO_PORT", "27017")),
+        "mongo_database": os.getenv("SHARED_MONGO_DATABASE", "tradingdb"),
+        "rabbitmq_host": os.getenv("rabbitmq_host", "localhost"),
+        "rabbitmq_port": int(os.getenv("rabbitmq_port", 5672)),
+        "rabbitmq_user": os.getenv("rabbitmq_user", "guest"),
+        "rabbitmq_password": os.getenv("rabbitmq_password", "guest"),
+        "BROKER_NAME": os.getenv("BROKER_NAME", "Breeze"),
+        "USER_NAME":os.getenv("USER_NAME", "DSINHA"),
         }
-        logging.info(
-            "Configurations for %s loaded successfully: %s",
-            self.service_name,
-            config_data,
-        )
-        return {"services": {self.service_name: config_data}}
+
+        if self._is_running_in_kubernetes():
+            config.update(self._load_configmap_data()) # Override with ConfigMap data
+
+        logging.info(f"Loaded configurations for {self.service_name}:")
+        for key, value in config.items():
+            logging.info(f" {key}: {value} (Source: ConfigMap, env, or default)")
+
+        return config
+
+    def _load_configmap_data(self) -> dict:
+        """
+        Loads configuration data from environment variables that are injected
+        by Kubernetes from a ConfigMap.
+        """
+        configmap_data = {
+        "postgres_host": os.getenv("DATABASE_HOST", "localhost"), # From ConfigMap
+        "postgres_port": int(os.getenv("DATABASE_PORT", "5432")), # From ConfigMap
+        }
+        return configmap_data
+    def get_all_configs(self) -> Dict[str, Any]:
+        """
+        Retrieve all configurations (common and service-specific).
+
+
+        Returns:
+        dict: A dictionary of all configurations.
+        """
+        return self.config
+    def _load_service_config(self) -> Dict[str, Any]:
+        """
+        Loads the service-specific configuration.
+
+
+        Returns:
+        dict: Service-specific configuration data.
+        """
+        service_config_data = {}
+#        "api_key": os.getenv(f"{self.service_name.upper()}_API_KEY", None),
+#        "page_size": int(os.getenv(f"{self.service_name.upper()}_PAGE_SIZE", "10")),
+        # ... other service-specific settings ...
+#        }
+        logging.info(f"Loaded {self.service_name} configurations: {service_config_data}")
+        return service_config_data
+    def _merge_configs(self) -> Dict[str, Any]:
+        """
+        Merges the common and service-specific configurations.
+
+
+        Returns:
+        dict: A single dictionary containing all configurations.
+        """
+        merged_config = self.common_config.copy() # Start with a copy of common config
+        logging.info(f"step 1 Merged configurations for {self.service_name}: {merged_config}")
+        merged_config.update(self.service_config) # Add/override with service-specific config
+        logging.info(f"step 2 Merged configurations for {self.service_name}: {merged_config}")
+        logging.info(f"Merged configurations for {self.service_name}: {merged_config}")
+        return merged_config
+ 
 
     def handle_error(self, error: Exception):
         """
         Handle errors gracefully.
 
+
         Args:
-            error (Exception): The exception to log.
+        error (Exception): The exception to log.
         """
-        logging.error("Error loading configuration for service '%s': %s", self.service_name, error)
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\config\manager.py:
-
-import os
-import logging
-from typing import Dict
-
-class ConfigManager:
-    def __init__(self, service_name: str = None):
-        """
-        Initialize the ConfigManager with the service name.
-        Args:
-            service_name (str): Name of the service. If None, it is auto-detected.
-        """
-        self.service_name = service_name or os.getenv("SERVICE_NAME", "default-service")
-        self.namespace = os.getenv("NAMESPACE", "default")
-        self.configmap_name = os.getenv("CONFIGMAP_NAME", "shared-config")
-
-    def get_env(self, key: str, default: str = None) -> str:
-        """
-        Retrieve environment variables with a fallback to a default value.
-        Args:
-            key (str): Environment variable key.
-            default (str): Default value if the key is not found.
-        Returns:
-            str: Value of the environment variable or default.
-        """
-        value = os.getenv(key, default)
-        if value is None:
-            logging.warning(f"Environment variable '{key}' not found. Using default: {default}")
-        return value
-
-    def get_service_configs(self) -> Dict[str, str]:
-        """
-        Retrieve all accessible configurations for the service.
-        Returns:
-            Dict[str, str]: Combined configuration dictionary.
-        """
-        shared_configs = {key: self.get_env(key) for key in os.environ if key.startswith("SHARED_")}
-        scoped_configs = {key: self.get_env(key) for key in os.environ if key.startswith(self.service_name.upper())}
-        private_configs = {key: self.get_env(key) for key in os.environ if key.startswith("PRIVATE_")}
-        
-        # Combine configs with priority: private > scoped > shared
-        return {**shared_configs, **scoped_configs, **private_configs}
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\config\scoped.py:
-
-import os
-import json
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
-def get_scoped_config(configmap_name: str) -> dict:
-    """
-    Fetch service-specific scoped configuration from environment variables.
-    """
-    try:
-        scoped_config_data = os.getenv(configmap_name, "{}")
-        scoped_config = json.loads(scoped_config_data)
-        logging.info(f"Scoped Config Retrieved for {configmap_name}: {scoped_config}")
-        return scoped_config
-    except json.JSONDecodeError as e:
-        logging.error(f"Error decoding scoped ConfigMap data for {configmap_name}: {e}")
-        return {}
-    except Exception as e:
-        logging.error(f"Error fetching scoped configuration: {e}")
-        return {}
+        logging.error(f"Error: {error}")    
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\config\secrets.py:
 
 import os
@@ -877,107 +364,581 @@ class BaseConnection:
             str: Config value or default.
         """
         return self.config.get(key, default)
+C:\stocksblitz\shared_architecture\build\lib\shared_architecture\connections\health_check.py:
+
+import asyncio
+from shared_architecture.utils.service_helpers import connection_manager, initialize_service
+from shared_architecture.connections.rabbitmq_connection import check_rabbitmq_health
+from shared_architecture.connections.mongodb_connection import check_mongo_health
+from shared_architecture.connections.timescaledb_connection import check_timescaledb_health
+
+
+async def system_health_check(service_name="health_service"):
+    # Ensure the shared connection manager is initialized
+    await initialize_service(service_name)
+
+    # Fetch Redis connection (used just for health check)
+    redis = await connection_manager.get_redis_connection()
+
+    # Perform health checks
+    results = await asyncio.gather(
+        redis.ping(),                  # Redis async ping
+        check_rabbitmq_health(),      # RabbitMQ health
+        asyncio.to_thread(check_mongo_health),  # MongoDB health
+        check_timescaledb_health(),   # TimescaleDB health
+    )
+
+    return {
+        "redis": results[0] == True,  # ping() returns True
+        "rabbitmq": results[1],
+        "mongodb": results[2],
+        "timescaledb": results[3],
+    }
+C:\stocksblitz\shared_architecture\build\lib\shared_architecture\connections\mongodb.py:
+
+import os
+import logging
+from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure
+import pymongo
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+
+class MongoDBConnection:
+    _client: MongoClient | None = None  # Class-level client
+
+    def __init__(self, config: dict):
+        """
+        Initializes the MongoDB connection (or reuses existing).
+
+        Args:
+            config (dict): Configuration dictionary containing MongoDB settings.
+        """
+        self.config = config
+        self.db = self._get_database()
+        self.connected = self._client is not None  # Track connection status
+        logging.info(f"MongoDBConnection initialized (or reused) with config: {self.config}")
+
+    @classmethod
+    def _get_client(cls, config: dict) -> MongoClient | None:
+        """
+        Gets or creates the MongoClient instance (singleton-like).
+        """
+        if cls._client is None:
+            try:
+                mongo_uri = config.get("mongo_uri")
+                if mongo_uri:
+                    cls._client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)  # Add timeout
+                else:
+                    cls._client = MongoClient(
+                        host=config.get("mongo_host", "localhost"),
+                        port=config.get("mongo_port", 27017),
+                        serverSelectionTimeoutMS=5000,
+                    )
+                    # Corrected: Build URI without username/password if they're not provided
+                    # if config.get("mongo_user") and config.get("mongo_password"):
+                    #     cls._client = MongoClient(
+                    #         host=config.get("mongo_host"),
+                    #         port=config.get("mongo_port"),
+                    #         username=config.get("mongo_user","tradmin"),
+                    #         password=config.get("mongo_password","tradpass"),
+                    #         authSource=config.get("mongo_auth_source", "admin"),
+                    #         serverSelectionTimeoutMS=5000,  # Add timeout
+                    #     )
+                    # else:
+                    #     cls._client = MongoClient(
+                    #         host=config.get("mongo_host", "localhost"),
+                    #         port=config.get("mongo_port", 27017),
+                    #         serverSelectionTimeoutMS=5000,
+                    #     )
+
+                cls._client.admin.command('ping')  # Test the connection
+                logging.info("MongoDB connection successful.")
+            except ConnectionFailure as e:
+                logging.error(f"Error connecting to MongoDB: {e}")
+                cls._client = None  # Set client to None on failure
+        return cls._client
+
+
+    def check_mongo_health():
+        try:
+            uri = f"mongodb://{os.getenv('MONGO_USER')}:{os.getenv('MONGO_PASSWORD')}@{os.getenv('MONGO_HOST')}:{os.getenv('MONGO_PORT')}/"
+            client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=2000)
+            client.admin.command("ping")
+            return {"status": "healthy"}
+        except Exception as e:
+            return {"status": "unhealthy", "error": str(e)}
+    def _get_database(self):
+        """
+        Gets the MongoDB database instance.
+        """
+        client = self._get_client(self.config)
+        if client:
+            return client[self.config.get("mongo_database", "test")]  # Default to "test" DB
+        else:
+            return None
+
+    def get_database(self):
+        """
+        Returns the MongoDB database instance (or None if not connected).
+        """
+        return self.db
+
+    def is_connected(self):
+        """
+        Returns True if the connection is established, False otherwise.
+        """
+        return self.connected
+
+    def close_connection(self):
+        """
+        Closes the MongoClient instance (if it was created here).
+        """
+        if self._client is not None:
+            self._client.close()
+            logging.info("MongoDB connection closed.")
+            MongoDBConnection._client = None  # Reset the class-level client
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\connections\rabbitmq.py:
 
 import pika
+import logging
+from pika.exceptions import AMQPConnectionError
+import aio_pika
+import os
+
+logging.basicConfig(
+level=logging.INFO,
+format="%(asctime)s - %(levelname)s - %(message)s",
+)
 
 class RabbitMQConnection:
-    def __init__(self, host: str, port: int, username: str, password: str):
-        self.host = host
-        self.port = port
-        self.credentials = pika.PlainCredentials(username, password)
+    def __init__(self, config: dict):
+        """
+        Initialize the RabbitMQ connection.
+
+        Args:
+        config (dict): Configuration dictionary containing RabbitMQ settings.
+        """
+        self.host = config.get("rabbitmq_host", "localhost")
+        self.port = int(config.get("rabbitmq_port", 5672))
+        self.username = config.get("rabbitmq_user", "guest")
+        self.password = config.get("rabbitmq_password", "guest")
+        self.credentials = pika.PlainCredentials(self.username, self.password)
+        self.connection = None
+        self.connected = False
+        logging.info(f"RabbitMQConnection initialized with config: {config}")
 
     def connect(self):
-        connection_params = pika.ConnectionParameters(
+        """
+        Establish a connection to RabbitMQ.
+        """
+        try:
+            connection_params = pika.ConnectionParameters(
             host=self.host,
             port=self.port,
-            credentials=self.credentials
-        )
-        return pika.BlockingConnection(connection_params)
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\connections\redis.py:
-
-"""
-Redis Connection Module
-
-This module provides functionality to manage connections to Redis
-using connection pooling for improved performance and scalability.
-"""
-
-import os
-from redis import Redis, ConnectionPool
-
-class RedisConnectionPool:
-    def __init__(self):
-        self.pool = ConnectionPool(
-            host=os.getenv('REDIS_HOST', 'localhost'),
-            port=int(os.getenv('REDIS_PORT', 6379)),
-            db=int(os.getenv('REDIS_DB', 0)),
-            max_connections=10
-        )
+            credentials=self.credentials,
+            )
+            self.connection = pika.BlockingConnection(connection_params)
+            self.connected = True
+            logging.info("RabbitMQ connection established.")
+            return self.connection
+        except AMQPConnectionError as e:
+            logging.error(f"Error connecting to RabbitMQ: {e}")
+            self.connection = None
+            self.connected = False
+            return None
 
     def get_connection(self):
         """
-        Retrieve a Redis connection using the connection pool.
+        Return the existing connection.
+        """
+        if not self.connected or self.connection is None or self.connection.is_closed:
+            logging.error("RabbitMQ connection is unavailable. Attempting to reconnect.")
+            self.connect() # Attempt to reconnect
+            if self.connection is None:
+                return None # Return None if reconnect also fails
+        return self.connection
+
+    def is_connected(self):
+        """
+        Returns True if the connection is established, False otherwise.
+        """
+        return self.connected
+
+    def close(self):
+        """
+        Close the RabbitMQ connection.
+        """
+        try:
+            if self.connection:
+                self.connection.close()
+                self.connected = False
+                logging.info("RabbitMQ connection closed.")
+        except Exception as e:
+            logging.error(f"Error closing RabbitMQ connection: {e}")
+
+
+    async def check_rabbitmq_health():
+        try:
+            url = f"amqp://{os.getenv('RABBITMQ_USER')}:{os.getenv('RABBITMQ_PASS')}@{os.getenv('RABBITMQ_HOST')}:{os.getenv('RABBITMQ_PORT')}/"
+            connection = await aio_pika.connect_robust(url)
+            await connection.close()
+            return {"status": "healthy"}
+        except Exception as e:
+            return {"status": "unhealthy", "error": str(e)}
+C:\stocksblitz\shared_architecture\build\lib\shared_architecture\connections\redis.py:
+
+import logging
+from redis.asyncio import RedisCluster
+from fastapi import FastAPI
+import socket
+# Logging Configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+
+class AsyncRedisConnectionPool:
+    def __init__(self, config: dict):
+        """
+        Initialize Redis connection pool using redis.asyncio.
+
+        Args:
+            config (dict): Configuration dictionary with Redis parameters.
+        """
+        self.config = config
+        self.redis = None  # Redis async connection instance
+        logging.info(f"AsyncRedisConnectionPool initialized with config: {self.config}")
+    def discover_redis_nodes(service="redis-cluster", namespace="default", port=6379):
+        try:
+            hosts = socket.gethostbyname_ex(f"{service}.{namespace}.svc.cluster.local")[2]
+            return [{"host": ip, "port": port} for ip in hosts]
+        except Exception as e:
+            logging.error(f"Failed to discover Redis Cluster nodes: {e}")
+            return []
+    def connect(self):
+        startup_nodes = self.discover_redis_nodes()
+        self.redis = RedisCluster(
+            startup_nodes=startup_nodes,
+            decode_responses=True,
+            max_connections=10,
+        )
+class RedisConnectionPool:
+    async def connect(self):
+        """
+        Establish an async connection to Redis.
+        """
+        try:
+            startup_nodes = discover_redis_nodes()
+            self.redis = RedisCluster(
+                startup_nodes=startup_nodes,
+                decode_responses=True,
+                max_connections=int(self.config.get("redis_max_connections", 10)),
+            )
+            # redis_url = f"redis://{self.config.get('redis_host', 'localhost')}:{self.config.get('redis_port', 6379)}"
+            # self.redis = Redis.from_url(
+            #     redis_url,
+            #     db=int(self.config.get("redis_db", 0)),
+            #     decode_responses=True,  # Ensures responses are returned as strings
+            #     max_connections=int(self.config.get("redis_max_connections", 10)),
+            # )
+
+            # Test Redis connection with ping
+            await self.redis.ping()
+            logging.info("Connected to Redis successfully.")
+        except Exception as e:
+            logging.error(f"Error connecting to Redis: {e}")
+            self.redis = None
+
+    async def get_connection(self):
+        """
+        Retrieve the Redis connection.
 
         Returns:
-            Redis: Redis connection instance.
+            redis.asyncio.Redis | None: Redis connection instance or None if not connected.
         """
-        return Redis(connection_pool=self.pool)
+        if not self.redis:
+            logging.error("Redis connection is unavailable.")
+            return None
+        return self.redis
+
+    async def is_connected(self):
+        """
+        Check if Redis connection is available.
+
+        Returns:
+            bool: True if connected, False otherwise.
+        """
+        try:
+            if not self.redis:
+                return False
+            return await self.redis.ping()
+        except Exception:
+            return False
+
+    async def close(self):
+        """
+        Closes the Redis connection pool gracefully.
+        """
+        if self.redis:
+            try:
+                await self.redis.close()
+                logging.info("Redis connection pool closed successfully.")
+            except Exception as e:
+                logging.error(f"Error closing Redis connection pool: {e}")
+C:\stocksblitz\shared_architecture\build\lib\shared_architecture\connections\redis_connection.py:
+
+import os
+import logging
+from redis.asyncio import Redis
+from redis.asyncio.cluster import RedisCluster
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+class RedisConnectionFactory:
+    def __init__(self):
+        self.redis = None
+
+    async def connect(self):
+        redis_mode = os.getenv("REDIS_MODE", "standalone").lower()
+
+        if redis_mode == "cluster":
+            self.redis = await self._connect_cluster()
+        else:
+            self.redis = await self._connect_standalone()
+
+    async def _connect_standalone(self) -> Optional[Redis]:
+        try:
+            host = os.getenv("REDIS_HOST", "localhost")
+            port = int(os.getenv("REDIS_PORT", "6379"))
+            db = int(os.getenv("REDIS_DB", "0"))
+
+            redis = Redis(
+                host=host,
+                port=port,
+                db=db,
+                decode_responses=True
+            )
+            await redis.ping()
+            logger.info("Connected to standalone Redis.")
+            return redis
+        except Exception as e:
+            logger.error(f"Failed to connect to standalone Redis: {e}")
+            return None
+
+    async def _connect_cluster(self) -> Optional[RedisCluster]:
+        try:
+            nodes_raw = os.getenv("REDIS_CLUSTER_NODES", "")
+            if not nodes_raw:
+                raise ValueError("REDIS_CLUSTER_NODES is not set.")
+
+            startup_nodes = []
+            for node in nodes_raw.split(","):
+                host, port = node.strip().split(":")
+                startup_nodes.append({"host": host, "port": int(port)})
+
+            redis = RedisCluster(
+                startup_nodes=startup_nodes,
+                decode_responses=True,
+                skip_full_coverage_check=True,
+            )
+            await redis.ping()
+            logger.info("Connected to Redis Cluster.")
+            return redis
+        except Exception as e:
+            logger.error(f"Failed to connect to Redis Cluster: {e}")
+            return None
+
+    async def get_connection(self):
+        if not self.redis:
+            logger.warning("Redis connection not established yet.")
+        return self.redis
+    async def health_check(self):
+        try:
+            if self.redis and await self.redis.ping():
+                return {"status": "healthy", "mode": os.getenv("REDIS_MODE", "standalone")}
+            return {"status": "unhealthy", "error": "No response to ping"}
+        except Exception as e:
+            return {"status": "unhealthy", "error": str(e)}
+C:\stocksblitz\shared_architecture\build\lib\shared_architecture\connections\test_mongo.py:
+
+from pymongo import MongoClient
+
+uri = "mongodb://tradmin:tradpass@localhost:27017/tradingdb"  # Your exact URI
+
+try:
+    client = MongoClient(uri)
+    client.admin.command('ping')  # Try a simple command
+    print("Connection successful!")
+except Exception as e:
+    print(f"Connection failed: {e}")
+finally:
+    if client:
+        client.close()
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\connections\timescaledb.py:
 
 import os
+import logging
 import psycopg2
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker,Session
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.engine.url import URL
+import asyncpg
 
-class TimescaleDBPool:
-    def __init__(self, database_url: str):
-        self.engine = create_engine(
-            database_url,
-            pool_size=10,
-            max_overflow=5,
-            pool_timeout=30,
-            pool_recycle=1800
-        )
-        self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
-
-    def get_session(self):
-        return self.SessionLocal()
+logging.basicConfig(
+ level=logging.INFO,
+ format="%(asctime)s - %(levelname)s - %(message)s",
+)
+logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)  # Enable SQLAlchemy logging
+logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)    # Enable connection pool logging
 
 class TimescaleDBConnection:
-    def __init__(self, database_url):
-        self.engine = create_engine(
-            database_url,
-            pool_size=10,
-            max_overflow=5,
-            pool_timeout=30,
-            pool_recycle=1800
-        )
-        self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+  def __init__(self, config: dict):
+    """
+    Initialize TimescaleDB connection.
 
-    def get_session(self):
-        return self.SessionLocal()
+    Args:
+    config (dict): Configuration dictionary.
+    """
+    self.config = config #.get("services", {}).get("TickerService", {})  # Adjust service name!
+    if not self.config:
+        raise ValueError("TimescaleDB configuration not found")
+    self.engine = self._create_engine()
+    #self.SessionLocal = self._create_session_maker()
+    self.connected = self.engine is not None  # Track connection status
+    logging.info(f"TimescaleDBConnection initialized with config: {self.config}")
 
-    def connect(self):
-        """
-        Establish a connection to TimescaleDB using private sensitive keys.
-        Returns:
-            psycopg2.connection: Database connection object.
-        """
-        return psycopg2.connect(
-            host=os.getenv("POSTGRES_HOST"),
-            port=os.getenv("POSTGRES_PORT"),
-            user=os.getenv("POSTGRES_USER"),
-            password=os.getenv("POSTGRES_PASSWORD"),  # Use the environment variable directly
-            dbname=os.getenv("POSTGRES_DATABASE")
-        )
+
+  async def check_timescaledb_health():
+      try:
+          conn = await asyncpg.connect(
+              user=os.getenv("POSTGRES_USER"),
+              password=os.getenv("POSTGRES_PASSWORD"),
+              database=os.getenv("POSTGRES_DB"),
+              host=os.getenv("POSTGRES_HOST"),
+              port=int(os.getenv("POSTGRES_PORT")),
+          )
+          await conn.execute("SELECT 1;")
+          await conn.close()
+          return {"status": "healthy"}
+      except Exception as e:
+          return {"status": "unhealthy", "error": str(e)}
+
+
+  # def _create_engine(self):
+  #   """
+  #   Creates the SQLAlchemy engine, handling connection errors.
+  #   """
+  #   db_url = self._get_database_url()
+  #   try:
+  #     engine = create_engine(
+  #       db_url,
+  #       pool_size=int(self.config.get("pool_size", 10)),
+  #       max_overflow=int(self.config.get("max_overflow", 5)),
+  #       pool_timeout=int(self.config.get("pool_timeout", 30)),
+  #       pool_recycle=int(self.config.get("pool_recycle", 1800)),
+  #     )
+  #     engine.connect()  # Try to connect immediately
+  #     return engine
+  #   except SQLAlchemyError as e:
+  #     logging.error(f"Error connecting to TimescaleDB: {e}")
+  #     return None  # Return None on failure
+
+  def _create_session_maker(self):
+    """
+    Creates the SQLAlchemy session maker.
+    """
+    if self.engine:
+      return sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+    else:
+      return None
+
+  def _get_database_url(self) -> str:
+    """
+    Constructs the database URL from configuration.
+    """
+    return (
+      f"postgresql://{self.config.get('postgres_user')}:"
+      f"{self.config.get('postgres_password')}@"
+      f"{self.config.get('postgres_host')}:"
+      f"{self.config.get('postgres_port')}/"
+      f"{self.config.get('postgres_database')}"
+      )
+
+  def get_session(self):
+    """
+    Provides a database session if connected, otherwise None.
+    """
+    if self.engine:
+      return Session(self.engine)
+    else:
+      logging.warning("TimescaleDB session requested, but connection is unavailable.")
+      return None
+
+  def is_connected(self):
+    """
+    Returns True if the connection is established, False otherwise.
+    """
+    return self.connected
+
+  def close(self):
+    """
+    Closes the connection.
+    """
+    if self.engine:
+      self.engine.dispose()  # Dispose of the engine
+      logging.info("TimescaleDB connection closed.")
+    
+  def _create_engine(self):
+      db_config = self.config #.get("services", {}).get("TickerService", {})
+      if not db_config:
+          raise ValueError("TimescaleDB configuration not found")
+
+      host = db_config.get("postgres_host")
+      port = db_config.get("postgres_port")
+      user = db_config.get("postgres_user")
+      password = db_config.get("postgres_password")
+      database = db_config.get("postgres_database")
+
+      if not all([host, port, user, password, database]):
+          raise ValueError("Incomplete TimescaleDB configuration")
+      url_str = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
+      # url = URL.create(
+      #     "postgresql+psycopg2",
+      #     username=user,
+      #     password=password,
+      #     host=host,
+      #     port=port,
+      #     database=database
+      # )
+
+      # Log the URL just before creating the engine
+      logging.info(f"SQLAlchemy URL: {url_str}")
+
+      engine = create_engine(url_str)
+      return engine
+
+  def get_engine(self):
+      return self.engine
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\connections\__init__.py:
 
+# Import necessary classes
 from .rabbitmq import RabbitMQConnection
-from .redis import RedisConnectionPool  # Fixed import path
+from .redis import AsyncRedisConnectionPool
 from .timescaledb import TimescaleDBConnection
+from .mongodb import MongoDBConnection  # Import the new class
 
-__all__ = ["RabbitMQConnection", "RedisConnectionPool", "TimescaleDBConnection"]
+# Define the module's public API
+__all__ = [
+    "RabbitMQConnection",
+    "AsyncRedisConnectionPool",  # Updated name to align with your async Redis class
+    "TimescaleDBConnection",
+    "MongoDBConnection",  # Add MongoDBConnection to __all__
+]
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\db\base.py:
 
 """
@@ -1012,6 +973,13 @@ DATABASE_URL = "postgresql://user:password@localhost:5432/mydb"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+C:\stocksblitz\shared_architecture\build\lib\shared_architecture\db\migrations.py:
+
+# shared_architecture/db/migrations.py
+def apply_migrations():
+    # Add your migration logic here (e.g., using Alembic)
+    print("Applying database migrations (replace with actual logic)")
+    pass
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\db\repository.py:
 
 """
@@ -1067,28 +1035,16 @@ class BaseRepository:
 # Add a blank line at the end for PEP 8 compliance
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\db\session.py:
 
-"""
-Database Session Module
+import os
+import logging
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import create_engine
 
-This module provides utilities for managing database connections and sessions
-using SQLAlchemy. It dynamically constructs the database URL from environment
-variables to ensure compatibility across multiple environments.
-"""
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
-import os  # Standard library
-from sqlalchemy.orm import sessionmaker  # Third-party library
-from sqlalchemy import create_engine  # Third-party library
-
-
+# Dynamically construct the database URL from environment variables
 def get_database_url() -> str:
-    """
-    Dynamically constructs the database URL from environment variables.
-
-    Returns:
-        str: The database connection URL.
-    Raises:
-        RuntimeError: If required database credentials are missing.
-    """
     try:
         db_user = os.getenv("POSTGRES_USER", "traduser")
         db_password = os.getenv("POSTGRES_PASSWORD", "tradpass")
@@ -1096,35 +1052,29 @@ def get_database_url() -> str:
         db_port = os.getenv("POSTGRES_PORT", "5432")
         db_name = os.getenv("POSTGRES_DATABASE", "timescaledb")
 
-        return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+        database_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+        logger.info(f"DATABASE_URL: {database_url}")  # Debugging log
+        return database_url
+
     except Exception as e:
+        logger.error(f"Failed to construct database URL: {e}")
         raise RuntimeError(f"Failed to construct database URL: {e}") from e
 
-
 DATABASE_URL = get_database_url()
-engine = create_engine(DATABASE_URL,
-    pool_size=10,       # Maximum connections in the pool
-    max_overflow=5,     # Connections that can overflow beyond pool_size
-    pool_timeout=30,    # Time to wait for connection before throwing an error
-    pool_recycle=1800   # Recycle connections after 1800 seconds
-)
+engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+logger.info(f"SessionLocal initialized with engine: {engine}")  # Debugging log
 
-
-def get_db():
-    """
-    Provide a database session generator.
-
-    Yields:
-        SQLAlchemy database session.
-    """
-    db = SessionLocal()
+# Dependency to provide database session
+def get_db() -> Session:
+    db: Session = SessionLocal()
     try:
+        logger.info(f"Database session created: {db.bind.url}")  # Debugging log
         yield db
     finally:
+        logger.info("Closing database session")  # Debugging log
         db.close()
-        
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\db\__init__.py:
 
 """
@@ -1142,6 +1092,20 @@ from .session import get_db  # Adjust the module name if necessary
 
 __all__ = ["BaseRepository", "get_db"]
 
+C:\stocksblitz\shared_architecture\build\lib\shared_architecture\db\models\activity_log.py:
+
+from sqlalchemy import Column, Integer, String, DateTime, Text
+from shared_architecture.db.base import Base
+import datetime
+
+class ActivityLog(Base):
+    __tablename__ = "activity_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, nullable=False)
+    activity_type = Column(String, nullable=False)
+    details = Column(Text)
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\db\models\broker.py:
 
 from sqlalchemy import create_engine, Column,Boolean, Integer, Float,String, Date, DateTime, ForeignKey, UniqueConstraint, Text
@@ -1152,7 +1116,7 @@ Base = declarative_base()
 
 class Broker(Base):
     __tablename__ = 'brokers'
-    __table_args__ = {'schema': 'tradingdb'} 
+    __table_args__ = {'schema': 'tradingdb'}  
     id = Column(Integer, primary_key=True)
     broker_name = Column(Text)
     login_url = Column(Text)
@@ -1192,6 +1156,18 @@ engine = create_engine("postgresql://user:password@localhost/dbname")  # Replace
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\db\models\enums.py:
 
+from enum import Enum
+
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    USER = "user"
+    MANAGER = "manager"
+
+class AccountStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    PENDING = "pending"
+    SUSPENDED = "suspended"
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\db\models\historical_data.py:
 
 from sqlalchemy import Column, TIMESTAMP, Text, Double, BigInteger, Date
@@ -1258,7 +1234,8 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 class Symbol(Base):
     __tablename__ = "symbols"
-
+    __table_args__ = {'schema': 'tradingdb'}
+    id = Column(Integer, primary_key=True)  
     instrument_key = Column(String, primary_key=True)
     stock_token = Column(String)
     instrumentname = Column(String)
@@ -1305,15 +1282,15 @@ class Symbol(Base):
     participantinmarketindex = Column(String)
     bookclsstartdate = Column(Date)
     bookclsenddate = Column(Date)
-    excercisestartdate = Column(Date)
-    excerciseenddate = Column(Date)
+    exercisestartdate = Column(Date)
+    exerciseenddate = Column(Date)
     oldtoken = Column(String)
     assetinstrument = Column(String)
     assetname = Column(String)
     assettoken = Column(Integer)
     intrinsicvalue = Column(Float)
     extrinsicvalue = Column(Float)
-    excercisestyle = Column(String)
+    exercisestyle = Column(String)
     egm = Column(String)
     agm = Column(String)
     interest = Column(String)
@@ -1329,6 +1306,8 @@ class Symbol(Base):
     deleteflag = Column(Boolean) # Changed to Boolean
     remarks = Column(String)
     baseprice = Column(Float)
+    life_time_high = Column(Float)
+    life_time_low = Column(Float)
     exchangecode = Column(String)
     expirydate = Column(DateTime)
     exchange_code = Column(String)
@@ -1406,424 +1385,211 @@ C:\stocksblitz\shared_architecture\build\lib\shared_architecture\db\models\users
 """Define the Users model for the database. including subscribptions, family membership, and other user-related information."""
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\db\models\__init__.py:
 
-"""
-This module initializes and consolidates all database models for the shared architecture.
-"""
+from .broker import *
+from .database import *
+from .enums import UserRole, AccountStatus
+from .activity_log import ActivityLog
+from .historical_data import *
+from .stocksdeveloper import *
+from .strategy import *
+from .symbol import *
+from .symbol_update import *
+from .tick_data import *
+from .users import *
 
-from .broker import Broker
-from .symbol import Symbol
-from .historical_data import HistoricalData
-from .tick_data import TickData
-from .symbol_update import SymbolUpdateStatus
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\models\broker.py:
+__all__ = ["UserRole", "AccountStatus", "ActivityLog", "Broker", "Symbol", "HistoricalData", "TickData", "SymbolUpdateStatus"]
+C:\stocksblitz\shared_architecture\build\lib\shared_architecture\errors\custom_exceptions.py:
 
-from sqlalchemy import create_engine, Column,Boolean, Integer, Float,String, Date, DateTime, ForeignKey, UniqueConstraint, Text
-from sqlalchemy.ext.declarative import declarative_base
-import datetime 
+class ServiceUnavailableError(Exception):
+    """
+    Exception raised when a required service is unavailable.
 
-Base = declarative_base()
+    Attributes:
+        service_name (str, optional): The name of the unavailable service.
+        message (str): Explanation of why the service is unavailable.
+    """
+    def __init__(self, service_name: str = None, message: str = "Service unavailable"):
+        self.service_name = service_name
+        if service_name:
+            message = f"Service '{service_name}' unavailable"
+        self.message = message
+        super().__init__(self.message)
+C:\stocksblitz\shared_architecture\build\lib\shared_architecture\utils\datetime_utils.py:
 
-class Broker(Base):
-    __tablename__ = 'brokers'
-    __table_args__ = {'schema': 'tradingdb'} 
-    id = Column(Integer, primary_key=True)
-    broker_name = Column(Text)
-    login_url = Column(Text)
-    api_key = Column(Text)
-    api_secret = Column(Text)
-    username = Column(Text)
-    password = Column(Text)
-    totp_key = Column(Text)
-    session_key = Column(Text)
-    session_key_date = Column(Date)
-    symbol_url = Column(Text)
-    status = Column(Text)
-    session_starttime = Column(DateTime) # Using DateTime for precise time
-    session_token = Column(Text)
-    live_status = Column(Text)
-    subscription_limit = Column(Integer)
-    daily_api_limit = Column(Integer)
-    minute_api_limit = Column(Integer)
-    records_per_api_requests = Column(Integer)
-    last_api_call_time = Column(DateTime, default=datetime.datetime.now)
-    minute_api_requests = Column(Integer, default=0)
-
-    # Unique constraint
-    __table_args__ = (UniqueConstraint('broker_name', 'username', name='uix_broker_username'),)
-
-
-    def __repr__(self):
-        return f"<Broker(broker_name='{self.broker_name}', username='{self.username}')>"
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\models\database.py:
-
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-
-Base = declarative_base()
-engine = create_engine("postgresql://user:password@localhost/dbname")  # Replace with your DB connection
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\models\enums.py:
-
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\models\historical_data.py:
-
-from sqlalchemy import Column, TIMESTAMP, Text, Double, BigInteger, Date
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
-
-class HistoricalData(Base):
-    __tablename__ = 'historical_data'
-
-    time = Column(TIMESTAMP(timezone=True), primary_key=True, nullable=False)
-    instrument_key = Column(Text, primary_key=True, nullable=False)
-    interval = Column(Text, primary_key=True, nullable=False)
-
-    open = Column(Double)
-    high = Column(Double)
-    low = Column(Double)
-    close = Column(Double)
-    volume = Column(BigInteger)
-    oi = Column(BigInteger)
-    expirydate = Column(Date)
-    option_type = Column(Text)
-    strikeprice = Column(Double)
-    
-    # Greeks data columns
-    greeks_open_IV = Column(Double)
-    greeks_open_delta = Column(Double)
-    greeks_open_gamma = Column(Double)
-    greeks_open_theta = Column(Double)
-    greeks_open_rho = Column(Double)
-    greeks_open_vega = Column(Double)
-
-    greeks_high_IV = Column(Double)
-    greeks_high_delta = Column(Double)
-    greeks_high_gamma = Column(Double)
-    greeks_high_theta = Column(Double)
-    greeks_high_rho = Column(Double)
-    greeks_high_vega = Column(Double)
-
-    greeks_low_IV = Column(Double)
-    greeks_low_delta = Column(Double)
-    greeks_low_gamma = Column(Double)
-    greeks_low_theta = Column(Double)
-    greeks_low_rho = Column(Double)
-    greeks_low_vega = Column(Double)
-
-    greeks_close_IV = Column(Double)
-    greeks_close_delta = Column(Double)
-    greeks_close_gamma = Column(Double)
-    greeks_close_theta = Column(Double)
-    greeks_close_rho = Column(Double)
-    greeks_close_vega = Column(Double)
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\models\stocksdeveloper.py:
-
-""" Include SQLAlchemy objects for orders, Positions, Margins, holdings"""
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\models\strategy.py:
-
-"""SQL Alchemy model for Strategy and Legs"""
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\models\symbol.py:
-
-from sqlalchemy import create_engine, Column,Boolean, Integer, Float,String, Date, DateTime, ForeignKey, UniqueConstraint, Text
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
-class Symbol(Base):
-    __tablename__ = "symbols"
-
-    instrument_key = Column(String, primary_key=True)
-    stock_token = Column(String)
-    instrumentname = Column(String)
-    stock_code = Column(String)
-    series = Column(String)
-    expirydate = Column(Date) # Changed to Date
-    strikeprice = Column(Float)
-    optiontype = Column(String)
-    calevel = Column(String)
-    permittedtotrade = Column(Boolean) # Changed to Boolean
-    issuecapital = Column(Float)
-    warningqty = Column(Integer)
-    freezeqty = Column(Integer)
-    creditrating = Column(String)
-    normalmarketstatus = Column(String)
-    oddlotmarketstatus = Column(String)
-    spotmarketstatus = Column(String)
-    auctionmarketstatus = Column(String)
-    normalmarketeligibility = Column(String)
-    oddlotmarketeligibility = Column(String)
-    spotmarketeligibility = Column(String)
-    auctionmarketeligibility = Column(String)
-    scripid = Column(String)
-    issuerate = Column(Float)
-    issuestartdate = Column(Date)
-    interestpaymentdate = Column(Date)
-    issuematuritydate = Column(Date)
-    marginpercentage = Column(Float)
-    minimumlotqty = Column(Integer)
-    lotsize = Column(Integer)
-    ticksize = Column(Float)
-    companyname = Column(String)
-    listingdate = Column(Date)
-    expulsiondate = Column(Date)
-    readmissiondate = Column(Date)
-    recorddate = Column(Date)
-    lowpricerange = Column(Float)
-    highpricerange = Column(Float)
-    securityexpirydate = Column(Date)
-    nodeliverystartdate = Column(Date)
-    nodeliveryenddate = Column(Date)
-    mf = Column(String)
-    aon = Column(String)
-    participantinmarketindex = Column(String)
-    bookclsstartdate = Column(Date)
-    bookclsenddate = Column(Date)
-    excercisestartdate = Column(Date)
-    excerciseenddate = Column(Date)
-    oldtoken = Column(String)
-    assetinstrument = Column(String)
-    assetname = Column(String)
-    assettoken = Column(Integer)
-    intrinsicvalue = Column(Float)
-    extrinsicvalue = Column(Float)
-    excercisestyle = Column(String)
-    egm = Column(String)
-    agm = Column(String)
-    interest = Column(String)
-    bonus = Column(String)
-    rights = Column(String)
-    dividends = Column(String)
-    exallowed = Column(String)
-    exrejectionallowed = Column(Boolean) # Changed to Boolean
-    plallowed = Column(Boolean) # Changed to Boolean
-    isthisasset = Column(Boolean) # Changed to Boolean
-    iscorpadjusted = Column(Boolean) # Changed to Boolean
-    localupdatedatetime = Column(DateTime)
-    deleteflag = Column(Boolean) # Changed to Boolean
-    remarks = Column(String)
-    baseprice = Column(Float)
-    exchangecode = Column(String)
-    expirydate = Column(DateTime)
-    exchange_code = Column(String)
-    product_type = Column(String)
-
-    __table_args__ = (UniqueConstraint('instrument_key'),)
-
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\models\symbol_update.py:
-
-
-from sqlalchemy import create_engine, Column,Boolean, Integer, Float,String, Date, DateTime, ForeignKey, UniqueConstraint, Text
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
-class SymbolUpdateStatus(Base):
-    __tablename__ = "symbols_update_status"
-    broker_name = Column(String, primary_key=True)
-    update_date = Column(Date, primary_key=True)
-    update_time = Column(DateTime)
-    
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\models\tick_data.py:
-
-from sqlalchemy import Column, TIMESTAMP, Text, Double, BigInteger, Date
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
-
-class TickData(Base):
-    __tablename__ = 'tick_data'
-
-    time = Column(TIMESTAMP(timezone=True), primary_key=True, nullable=False)
-    instrument_key = Column(Text, primary_key=True, nullable=False)
-    interval = Column(Text, primary_key=True, nullable=False)
-
-    open = Column(Double)
-    high = Column(Double)
-    low = Column(Double)
-    close = Column(Double)
-    volume = Column(BigInteger)
-    oi = Column(BigInteger)
-    expirydate = Column(Date)
-    option_type = Column(Text)
-    strikeprice = Column(Double)
-    
-    # Greeks data columns
-    greeks_open_IV = Column(Double)
-    greeks_open_delta = Column(Double)
-    greeks_open_gamma = Column(Double)
-    greeks_open_theta = Column(Double)
-    greeks_open_rho = Column(Double)
-    greeks_open_vega = Column(Double)
-
-    greeks_high_IV = Column(Double)
-    greeks_high_delta = Column(Double)
-    greeks_high_gamma = Column(Double)
-    greeks_high_theta = Column(Double)
-    greeks_high_rho = Column(Double)
-    greeks_high_vega = Column(Double)
-
-    greeks_low_IV = Column(Double)
-    greeks_low_delta = Column(Double)
-    greeks_low_gamma = Column(Double)
-    greeks_low_theta = Column(Double)
-    greeks_low_rho = Column(Double)
-    greeks_low_vega = Column(Double)
-
-    greeks_close_IV = Column(Double)
-    greeks_close_delta = Column(Double)
-    greeks_close_gamma = Column(Double)
-    greeks_close_theta = Column(Double)
-    greeks_close_rho = Column(Double)
-    greeks_close_vega = Column(Double)
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\models\users.py:
-
-"""Define the Users model for the database. including subscribptions, family membership, and other user-related information."""
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\models\__init__.py:
-
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\startup\database_migration.py:
-
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\startup\initialize_services.py:
-
-import pika
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from app.schemas import subscription as subscription_schema
+from app.services import broker_service, symbol_service
+from shared_architecture.db import get_db
 import logging
-from shared_architecture.config import shared_config
-from shared_architecture.utils import get_common_config
-from shared_architecture.utils import get_scoped_config
-def connect_rabbitmq():
+
+router = APIRouter()
+
+
+@router.post("/subscribe/", status_code=200)
+async def subscribe_to_symbol(
+    subscription: subscription_schema.SubscriptionCreate,
+    db: Session = Depends(get_db),
+    interval: str = '1second',
+    get_market_depth: bool = False,
+    get_exchange_quotes: bool = True
+):
+    """
+    Endpoint to subscribe to a symbol for real-time feeds.
+    """
     try:
-        config_map_data = shared_config.fetch_config()
-        logging.info("Connecting to RabbitMQ...")
-        parameters = pika.URLParameters(config_map_data.get("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/"))
-        connection = pika.BlockingConnection(parameters)
-        logging.info("RabbitMQ connection established")
-        return connection
+        broker = await broker_service.get_broker_details(db)
+
+        # Retrieve broker-specific token
+        broker_token = await symbol_service.get_broker_token(
+            db, subscription.instrument_key, broker.broker_name
+        )
+
+        # Check subscription limit
+        if broker.subscription_limit is not None:
+            # get count of current subscriptions.
+            # replace with actual count query.
+            count = 0
+            if count >= broker.subscription_limit:
+                raise HTTPException(
+                    status_code=429, detail="Subscription limit exceeded"
+                )
+
+        await broker_service.subscribe_to_symbol(
+            broker,
+            subscription.instrument_key,
+            broker_token,
+            interval,
+            get_market_depth,
+            get_exchange_quotes,
+        )
+        return {"message": "Subscription successful"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        logging.error(f"Failed to connect to RabbitMQ: {e}")
-        raise RuntimeError("Unable to connect to RabbitMQ")
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\startup\__init__.py:
+        logging.error(f"Error subscribing to symbol: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\tests\test_config.py:
 
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\tests\test_models.py:
+@router.post("/unsubscribe/", status_code=200)
+async def unsubscribe_from_symbol(
+    subscription: subscription_schema.SubscriptionCreate,
+    db: Session = Depends(get_db),
+    interval: str = '1second'
+):
+    """
+    Endpoint to unsubscribe from a symbol.
+    """
+    try:
+        broker = await broker_service.get_broker_details(db)
 
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\tests\test_utils.py:
+        # Retrieve broker-specific token
+        broker_token = await symbol_service.get_broker_token(
+            db, subscription.instrument_key, broker.broker_name
+        )
 
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\utils\api_utils.py:
+        await broker_service.unsubscribe_from_symbol(
+            broker, subscription.instrument_key, broker_token, interval
+        )
+        return {"message": "Unsubscription successful"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logging.error(f"Error unsubscribing from symbol: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+C:\stocksblitz\shared_architecture\build\lib\shared_architecture\utils\keycloak_helper.py:
 
 import requests
 import logging
-from circuitbreaker import circuit
-import traceback
 
-class ApiHandler:
-    def __init__(self, config, session=None):
-        self.config = config
-        self.session = session
+def get_access_token(auth_url, client_id, client_secret, username, password):
+    try:
+        data = {
+            "grant_type": "password",
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "username": username,
+            "password": password
+        }
+        response = requests.post(auth_url, data=data)
+        response.raise_for_status()
+        return response.json().get("access_token")
+    except Exception as e:
+        logging.error(f"Error getting Keycloak token: {e}")
+        raise
 
-    @circuit(failure_threshold=3, recovery_timeout=30)
-    def execute(self, service_instance, api_function, pre_hook=None, post_hook=None, **kwargs):
-        try:
-            # Execute pre-hook if provided
-            if pre_hook:
-                pre_hook()
-
-            # Service instance-based API call
-            if service_instance:
-                return self._handle_service_call(service_instance, api_function, **kwargs)
-
-            # HTTP API call
-            return self._handle_http_call(api_function, **kwargs)
-
-        except Exception as e:
-            logging.error(f"API execution failed: {e}")
-            traceback.print_exc()
-            raise
-        finally:
-            if post_hook:
-                post_hook()
-
-    def _handle_service_call(self, service_instance, api_function, **kwargs):
-        try:
-            logging.info(f"Calling service API: {api_function} with params: {kwargs}")
-            response = getattr(service_instance, api_function)(**kwargs)
-            return response
-        except Exception as e:
-            logging.error(f"Service API call failed: {e}")
-            raise
-
-    def _handle_http_call(self, api_function, **kwargs):
-        headers = {"Content-Type": "application/json"}
-        payload = {"action": api_function, "data": kwargs}
-
-        try:
-            logging.info(f"Making HTTP POST request with payload: {payload}")
-            response = requests.post(self.config.get("url_with_port"), headers=headers, json=payload)
-            response.raise_for_status()  # Raise for HTTP errors
-
-            if response.headers.get("Content-Type") == "application/json":
-                return response.json()
-
-            return response.text
-
-        except requests.RequestException as e:
-            logging.error(f"HTTP API call failed: {e}")
-            raise
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\utils\config_utils.py:
-
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\utils\date_utils.py:
-
-import logging
-from datetime import datetime
-from zoneinfo import ZoneInfo
-
-
-
-class CustomDate:
-    def __init__(self, in_date):
-        self.date, self.time, self.datetime, self.datetime_Z = (None,) * 4
-        if not self.is_empty(in_date):
-            self.datetime, self.datetime_Z = self.process_datetimes(in_date)
-            if self.datetime:
-                self.date = self.datetime.date()
-
-    def add_timezone(self, dt_obj):
-        if not isinstance(dt_obj, datetime) or dt_obj is None:
-            return None
-
-        ist_timezone = ZoneInfo("Asia/Kolkata")
-        return dt_obj.astimezone(ist_timezone)
-
-    def recognize_and_convert_dt(self, date_str):
-        formats = ['%Y-%m-%dT%H:%M:%S.%f', '%d-%b-%Y', '%Y-%m-%d %H:%M:%S.%f', '%d-%m-%Y', '%Y-%m-%d']
-        for fmt in formats:
-            try:
-                date_obj = datetime.strptime(date_str, fmt)
-                return self.add_timezone(date_obj)
-            except ValueError:
-                continue
-        return None
-
-    def convert_to_iso_z(self, dt_obj):
-        return dt_obj.strftime('%Y-%m-%dT%H:%M:%S.000Z') if dt_obj else None
-
-    @staticmethod
-    def is_empty(date_obj):
-        return not date_obj.strip() if isinstance(date_obj, str) else date_obj is None
-
-    def process_datetimes(self, date_str):
-        if isinstance(date_str, str):
-            dt_obj = self.recognize_and_convert_dt(date_str)
-        elif isinstance(date_str, datetime):
-            dt_obj = self.add_timezone(date_str)
-        else:
-            return None, None
-
-        return dt_obj, self.convert_to_iso_z(dt_obj)
+def refresh_access_token(refresh_url, client_id, client_secret, refresh_token):
+    try:
+        data = {
+            "grant_type": "refresh_token",
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "refresh_token": refresh_token
+        }
+        response = requests.post(refresh_url, data=data)
+        response.raise_for_status()
+        return response.json().get("access_token")
+    except Exception as e:
+        logging.error(f"Error refreshing Keycloak token: {e}")
+        raise
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\utils\logging_utils.py:
 
 import logging
+import os
+import logging.config
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+def log_info(message):
+    logger.info(message)
+
+def log_error(message):
+    logger.error(message)
+
+def log_warning(message):
+    logger.warning(message)
+
+def log_debug(message):
+    logger.debug(message)
+
+def log_exception(message):
+    logger.exception(message, exc_info=True) # Log with traceback
+
+def configure_logging(service_name: str = "microservice", log_level: str = "INFO"):
+    """
+    Configures logging for the microservice.
+
+    Args:
+        service_name: The name of the microservice (used in log messages).
+        log_level: The desired logging level (e.g., "DEBUG", "INFO", "WARNING", "ERROR").
+    """
+
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)  # Create the 'logs' directory if it doesn't exist
+    log_file = log_dir / f"{service_name}.log"
+
+    # Basic configuration (can be extended)
+    logging.basicConfig(
+        level=getattr(logging, log_level.upper(), logging.INFO),  # Default to INFO
+        format=f"%(asctime)s - %(levelname)s - {service_name} - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[
+            logging.StreamHandler(),  # Output to console
+            logging.FileHandler(log_file),  # Output to file
+        ],
+    )
+    logging.info(f"Logging configured for {service_name} at level {log_level}")
+
+
+if __name__ == "__main__":
+    configure_logging("test_service", "DEBUG")
+    logging.debug("This is a debug message.")
+    logging.info("This is an info message.")
+    logging.warning("This is a warning message.")
+    logging.error("This is an error message.")
+    logging.critical("This is a critical message.")
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\utils\other_helpers.py:
 
 import logging
@@ -1887,165 +1653,246 @@ def log_error(exception, context=""):
         context (str): Additional context about where the error occurred.
     """
     logging.error(f"Error in {context}: {exception}")
+C:\stocksblitz\shared_architecture\build\lib\shared_architecture\utils\rabbitmq_helper.py:
+
+import pika
+import json
+import logging
+
+def publish_message(rabbitmq_url, queue_name, message):
+    try:
+        connection = pika.BlockingConnection(pika.URLParameters(rabbitmq_url))
+        channel = connection.channel()
+        channel.queue_declare(queue=queue_name, durable=True)
+
+        channel.basic_publish(
+            exchange='',
+            routing_key=queue_name,
+            body=json.dumps(message),
+            properties=pika.BasicProperties(delivery_mode=2)  # make message persistent
+        )
+        logging.info(f"Message published to {queue_name}")
+        connection.close()
+    except Exception as e:
+        logging.error(f"Error publishing message to {queue_name}: {e}")
+        raise
+C:\stocksblitz\shared_architecture\build\lib\shared_architecture\utils\retry_helpers.py:
+
+import time
+import logging
+from functools import wraps
+
+def retry(exceptions, tries=3, delay=1, backoff=2):
+    def decorator_retry(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            _tries, _delay = tries, delay
+            while _tries > 1:
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    logging.warning(f"{e}, Retrying in {_delay} seconds...")
+                    time.sleep(_delay)
+                    _tries -= 1
+                    _delay *= backoff
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator_retry
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\utils\service_helpers.py:
 
 import os
 import logging
-from shared_architecture.connections.timescaledb import TimescaleDBPool
-from shared_architecture.connections.redis import RedisConnectionPool
+from redis.asyncio import RedisCluster
+import socket
+from shared_architecture.connections.timescaledb import TimescaleDBConnection
 from shared_architecture.connections.rabbitmq import RabbitMQConnection
-
+from shared_architecture.connections.mongodb import MongoDBConnection
+from shared_architecture.connections.redis_connection import RedisConnectionFactory
+# Setup logging
 logging.basicConfig(
     level=os.getenv("LOGGING_LEVEL", "INFO"),
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# Centralized Connection Manager
-class ConnectionManager:
-    """
-    Manages and provides connections for databases and message queues.
-    """
-    def __init__(self):
-        # Initialize connections as None
-        self._timescaledb_pool = None
+class AsyncConnectionManager:
+    def __init__(self, config: dict):
+        self.config = config
+        self._timescaledb_conn = None
         self._redis_pool = None
         self._rabbitmq_conn = None
+        self._mongodb_conn = None
 
-    def initialize(self):
-        """
-        Initializes all shared connections and pools.
-        """
+    async def initialize(self):
         logging.info("Initializing connection pools and shared services...")
+        await self._initialize_timescaledb()
+        await self._initialize_redis()
+        self._initialize_rabbitmq()
+        await self._initialize_mongodb()
+        logging.info("All connections initialized.")
+    async def _initialize_redis(self):
+        try:
+            redis_factory = RedisConnectionFactory()
+            await redis_factory.connect()
+            self._redis_pool = await redis_factory.get_connection()
+            logger.info("Redis (standalone or cluster) initialized.")
+        except Exception as e:
+            logger.error(f"Failed to initialize Redis: {e}")
+    def _discover_redis_cluster_nodes(self):
+        service = self.config.get("redis_cluster_service", "redis-cluster")
+        namespace = self.config.get("redis_namespace", "default")
+        port = int(self.config.get("redis_port", 6379))
+        try:
+            hosts = socket.gethostbyname_ex(f"{service}.{namespace}.svc.cluster.local")[2]
+            return [{"host": ip, "port": port} for ip in hosts]
+        except Exception as e:
+            logging.error(f"Failed to discover Redis Cluster nodes: {e}")
+            return []
 
-        # Initialize TimescaleDB connection pool
-        database_url = self._build_database_url()
-        self._timescaledb_pool = TimescaleDBPool(database_url=database_url)
+    async def _initialize_redis(self):
+        try:
+            startup_nodes = self._discover_redis_cluster_nodes()
+            if not startup_nodes:
+                raise RuntimeError("No Redis cluster nodes found.")
 
-        # Initialize Redis connection pool
-        self._redis_pool = RedisConnectionPool()
+            self._redis_pool = RedisCluster(
+                startup_nodes=startup_nodes,
+                decode_responses=True,
+                max_connections=int(self.config.get("redis_max_connections", 10)),
+            )
+            await self._redis_pool.ping()
+            logging.info("Connected to Redis Cluster successfully.")
+        except Exception as e:
+            logging.error(f"Redis Cluster connection failed during initialization: {e}")
+            self._redis_pool = None
 
-        # Initialize RabbitMQ connection
-        self._rabbitmq_conn = RabbitMQConnection(
-            host=os.getenv('RABBITMQ_HOST', 'localhost'),
-            port=int(os.getenv('RABBITMQ_PORT', 5672)),
-            username=os.getenv('RABBITMQ_USER', 'guest'),
-            password=os.getenv('RABBITMQ_PASSWORD', 'guest')
-        ).connect()
+    async def get_redis_connection(self):
+        if not self._redis_pool:
+            logging.error("Redis cluster connection is not initialized.")
+            return None
+        try:
+            if not await self._redis_pool.ping():
+                logging.error("Redis cluster is unreachable.")
+                return None
+            return self._redis_pool
+        except Exception as e:
+            logging.error(f"Redis cluster ping failed: {e}")
+            return None
 
-        logging.info("All connections initialized successfully.")
-
-    def _build_database_url(self):
+    async def _initialize_timescaledb(self):
         """
-        Builds the TimescaleDB database URL dynamically.
+        Initialize TimescaleDB connection pool.
         """
-        return f"postgresql://{os.getenv('POSTGRES_USER', 'tradmin')}:" \
-               f"{os.getenv('POSTGRES_PASSWORD', 'tradpass')}@" \
-               f"{os.getenv('POSTGRES_HOST', 'localhost')}:" \
-               f"{os.getenv('POSTGRES_PORT', '5432')}/" \
-               f"{os.getenv('POSTGRES_DATABASE', 'timescaledb')}"
+        try:
+            self._timescaledb_conn = TimescaleDBConnection(config=self.config)
+            if not self._timescaledb_conn.is_connected():
+                logging.warning("TimescaleDB connection failed during initialization.")
+        except Exception as e:
+            logging.error(f"Error initializing TimescaleDB connection: {e}")
+
+
+
+    def _initialize_rabbitmq(self):
+        """
+        Initialize RabbitMQ connection.
+        """
+        try:
+            self._rabbitmq_conn = RabbitMQConnection(config=self.config)
+            self._rabbitmq_conn.connect()
+            if not self._rabbitmq_conn.is_connected():
+                logging.warning("RabbitMQ connection failed during initialization.")
+        except Exception as e:
+            logging.error(f"Error initializing RabbitMQ connection: {e}")
+
+    async def _initialize_mongodb(self):
+        """
+        Initialize MongoDB connection.
+        """
+        try:
+            self._mongodb_conn = MongoDBConnection(config=self.config)
+            if not self._mongodb_conn.is_connected():
+                logging.warning("MongoDB connection failed during initialization.")
+        except Exception as e:
+            logging.error(f"MongoDB connection error: {e}")
+
+
 
     def get_timescaledb_session(self):
         """
         Provides a database session from the TimescaleDB pool.
         """
-        if not self._timescaledb_pool:
-            raise RuntimeError("TimescaleDB pool has not been initialized.")
-        return self._timescaledb_pool.get_session()
-
-    def get_redis_connection(self):
-        """
-        Provides a Redis connection from the pool.
-        """
-        if not self._redis_pool:
-            raise RuntimeError("Redis pool has not been initialized.")
-        return self._redis_pool.get_connection()
+        if not self._timescaledb_conn or not self._timescaledb_conn.is_connected():
+            logging.error("TimescaleDB connection is unavailable.")
+            return None
+        return self._timescaledb_conn.get_session()
 
     def get_rabbitmq_connection(self):
         """
         Provides the RabbitMQ connection.
         """
-        if not self._rabbitmq_conn:
-            raise RuntimeError("RabbitMQ connection has not been initialized.")
-        return self._rabbitmq_conn
+        if not self._rabbitmq_conn or not self._rabbitmq_conn.is_connected():
+            logging.error("RabbitMQ connection is unavailable.")
+            return None
+        return self._rabbitmq_conn.get_connection()
+
+    def get_mongodb_connection(self):
+        """
+        Provides the MongoDB connection.
+        """
+        if not self._mongodb_conn or not self._mongodb_conn.is_connected():
+            logging.error("MongoDB connection is unavailable.")
+            return None
+        return self._mongodb_conn.get_database()
+
+    async def close_connections(self):
+        """
+        Closes all connections gracefully.
+        """
+        try:
+            if self._redis_pool:
+                await self._redis_pool.close()
+                logging.info("Redis connection pool closed.")
+
+            logging.info("All connections closed successfully.")
+        except Exception as e:
+            logging.error(f"Error closing connections: {e}")
+
 
 # Singleton instance of ConnectionManager
-connection_manager = ConnectionManager()
+connection_manager = None
 
-def initialize_service(service_name: str):
+
+async def initialize_service(service_name: str, config: dict):
     """
     Initializes the ConnectionManager for shared resources.
 
     Args:
-        service_name (str): The name of the microservice (currently unused, can be extended).
+        service_name (str): The name of the microservice.
+        config (dict): The configuration for the service.
     """
-    connection_manager.initialize()
-    logging.info(f"Service '{service_name}' initialized.")
-C:\stocksblitz\shared_architecture\build\lib\shared_architecture\utils\symbol_utils.py:
-
-import re
-import json
-from datetime import datetime
-import logging
-
-class ProductType:
-    EQUITIES = "equities"
-    FUTURES = "futures"
-    OPTIONS = "options"
-
-class Broker_Name:
-    BREEZE = "BREEZE"
-    ZERODHA = "ZERODHA"
-
-class TickerException(Exception):
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
-
-class Symbol:
-    right_mapping = {"call": "C", "put": "P", "CE": "C", "PE": "P"}
-
-    def __init__(self, instrument_key=None, **kwargs):
-        self.stock_code = kwargs.get('stock_code', '')
-        self.expirydate = kwargs.get('expirydate', '')
-        self.right = kwargs.get('right', '')
-        self.strikeprice = kwargs.get('strikeprice', '')
-        self.product_type = kwargs.get('product_type', '')
-
-        if instrument_key:
-            self.instrument_key = instrument_key
-
-    @property
-    def instrument_key(self):
-        if self.product_type == ProductType.EQUITIES:
-            return f"{self.stock_code}:{ProductType.EQUITIES}"
-        elif self.product_type == ProductType.FUTURES:
-            return f"{self.stock_code}:{ProductType.FUTURES}:{self.expirydate}"
-        elif self.product_type == ProductType.OPTIONS:
-            return f"{self.stock_code}:{ProductType.OPTIONS}:{self.expirydate}:{self.right}:{self.strikeprice}"
-
-    @instrument_key.setter
-    def instrument_key(self, key):
-        parts = key.split(":")
-        if len(parts) < 3:
-            raise ValueError("Invalid instrument key format.")
-        self.stock_code, self.product_type, *optional = parts
-        if self.product_type == ProductType.FUTURES:
-            self.expirydate = optional[0]
-        elif self.product_type == ProductType.OPTIONS:
-            self.expirydate, self.right, self.strikeprice = optional[:3]
-
-    @classmethod
-    def from_broker(cls, symbol_str, broker):
-        if broker == Broker_Name.ZERODHA:
-            # Parse Zerodha-specific formats here
-            pass
-        elif broker == Broker_Name.BREEZE:
-            # Parse Breeze-specific formats here
-            pass
-        else:
-            raise ValueError(f"Unsupported broker: {broker}")
+    global connection_manager
+    if connection_manager is None:
+        connection_manager = AsyncConnectionManager(config=config)
+        await connection_manager.initialize()
+        logging.info(f"Service '{service_name}' initialized.")
 C:\stocksblitz\shared_architecture\build\lib\shared_architecture\utils\__init__.py:
 
+from .datetime_utils import CustomDate
+from .keycloak_helper import get_access_token, refresh_access_token
+from .logging_utils import configure_logging, log_info, log_error, log_warning, log_debug, log_exception
+from .rabbitmq_helper import publish_message
+from .retry_helpers import retry
+from .service_helpers import connection_manager, initialize_service
+from .other_helpers import validate_env_variable, safe_int_conversion, format_date, log_error as log_other_error
+
+__all__ = [
+    "CustomDate",
+    "get_access_token", "refresh_access_token",
+    "configure_logging", "log_info", "log_error", "log_warning", "log_debug", "log_exception",
+    "publish_message",
+    "retry",
+    "connection_manager", "initialize_service",
+    "validate_env_variable", "safe_int_conversion", "format_date", "log_other_error"
+]
 C:\stocksblitz\shared_architecture\shared_architecture\__init__.py:
 
 C:\stocksblitz\shared_architecture\shared_architecture\config\common.py:
@@ -2082,6 +1929,28 @@ def get_shared_config() -> dict:
     for key, value in shared_config.items():
         logging.info(f" {key}: {value} (Source: env or default)")
     return shared_config
+C:\stocksblitz\shared_architecture\shared_architecture\config\config_loader.py:
+
+import os
+
+def get_env(key: str, default=None, cast_type=str):
+    value = os.getenv(key, default)
+    if value is None:
+        raise EnvironmentError(f"Missing required environment variable: {key}")
+    try:
+        if cast_type == bool:
+            return value.lower() in ("1", "true", "yes")
+        return cast_type(value)
+    except Exception as e:
+        raise ValueError(f"Environment variable '{key}' must be castable to {cast_type}: {e}")
+
+class Environment:
+    def __init__(self):
+        self.use_mocks = get_env("USE_MOCKS", "false", bool)
+        self.env = get_env("ENV", "dev")
+        self.service_name = get_env("SERVICE_NAME", "microservice")
+
+ENV = Environment()
 C:\stocksblitz\shared_architecture\shared_architecture\config\config_manager.py:
 
 import os
@@ -2364,27 +2233,51 @@ class BaseConnection:
             str: Config value or default.
         """
         return self.config.get(key, default)
+import logging
+logger = logging.getLogger(__name__)
+# This will be filled dynamically by each connector
+OPEN_CONNECTIONS = []   
+def register_connection(conn):
+    """Optional: Track open connections (live or mock) for shutdown."""
+    OPEN_CONNECTIONS.append(conn)
+def close_all_connections():
+    """
+    Gracefully close all tracked connections that have a `.close()` or `.disconnect()` method.
+    """
+    for conn in OPEN_CONNECTIONS:
+        try:
+            if hasattr(conn, "close") and callable(conn.close):
+                conn.close()
+            elif hasattr(conn, "disconnect") and callable(conn.disconnect):
+                conn.disconnect()
+        except Exception as e:
+            logger.warning(f"Failed to close connection {conn}: {e}")
 C:\stocksblitz\shared_architecture\shared_architecture\connections\health_check.py:
 
 import asyncio
-from shared_architecture.connections.redis_connection import RedisConnectionFactory
+from shared_architecture.utils.service_helpers import connection_manager, initialize_service
 from shared_architecture.connections.rabbitmq_connection import check_rabbitmq_health
 from shared_architecture.connections.mongodb_connection import check_mongo_health
 from shared_architecture.connections.timescaledb_connection import check_timescaledb_health
 
-async def system_health_check():
-    redis_factory = RedisConnectionFactory()
-    await redis_factory.connect()
 
+async def system_health_check(service_name="health_service"):
+    # Ensure the shared connection manager is initialized
+    await initialize_service(service_name)
+
+    # Fetch Redis connection (used just for health check)
+    redis = await connection_manager.get_redis_connection()
+
+    # Perform health checks
     results = await asyncio.gather(
-        redis_factory.health_check(),
-        check_rabbitmq_health(),
-        asyncio.to_thread(check_mongo_health),
-        check_timescaledb_health(),
+        redis.ping(),                  # Redis async ping
+        check_rabbitmq_health(),      # RabbitMQ health
+        asyncio.to_thread(check_mongo_health),  # MongoDB health
+        check_timescaledb_health(),   # TimescaleDB health
     )
 
     return {
-        "redis": results[0],
+        "redis": results[0] == True,  # ping() returns True
         "rabbitmq": results[1],
         "mongodb": results[2],
         "timescaledb": results[3],
@@ -2394,12 +2287,10 @@ C:\stocksblitz\shared_architecture\shared_architecture\connections\mongodb.py:
 import os
 import logging
 from pymongo import MongoClient
+from shared_architecture.config.config_loader import get_env
 from pymongo.errors import ConnectionFailure
 import pymongo
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
+logger = logging.getLogger(__name__)
 
 class MongoDBConnection:
     _client: MongoClient | None = None  # Class-level client
@@ -2495,6 +2386,28 @@ class MongoDBConnection:
             self._client.close()
             logging.info("MongoDB connection closed.")
             MongoDBConnection._client = None  # Reset the class-level client
+
+
+def get_live_mongo():
+    """
+    Establishes a connection to a MongoDB instance using env vars.
+    Returns the MongoClient object.
+    """
+    host = get_env("MONGO_HOST", "localhost")
+    port = get_env("MONGO_PORT", 27017, int)
+    username = get_env("MONGO_USER", None)
+    password = get_env("MONGO_PASSWORD", None)
+
+    logger.info(f"Connecting to MongoDB at {host}:{port}")
+
+    if username and password:
+        uri = f"mongodb://{username}:{password}@{host}:{port}/"
+    else:
+        uri = f"mongodb://{host}:{port}/"
+
+    client = MongoClient(uri)
+    logger.info("MongoDB connection established.")
+    return client
 C:\stocksblitz\shared_architecture\shared_architecture\connections\rabbitmq.py:
 
 import pika
@@ -2502,11 +2415,8 @@ import logging
 from pika.exceptions import AMQPConnectionError
 import aio_pika
 import os
-
-logging.basicConfig(
-level=logging.INFO,
-format="%(asctime)s - %(levelname)s - %(message)s",
-)
+from shared_architecture.config.config_loader import get_env
+logger = logging.getLogger(__name__)
 
 class RabbitMQConnection:
     def __init__(self, config: dict):
@@ -2583,107 +2493,217 @@ class RabbitMQConnection:
             return {"status": "healthy"}
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
+
+# shared_architecture/connections/rabbitmq.py
+
+
+
+def get_rabbitmq_connection():
+    """
+    Connects to RabbitMQ using environment variables.
+    Returns the channel.
+    """
+    host = get_env("RABBITMQ_HOST", "localhost")
+    port = get_env("RABBITMQ_PORT", 5672, int)
+    username = get_env("RABBITMQ_USER", "user")
+    password = get_env("RABBITMQ_PASSWORD", "password")
+    virtual_host = get_env("RABBITMQ_VHOST", "/")
+
+    credentials = pika.PlainCredentials(username, password)
+    parameters = pika.ConnectionParameters(
+        host=host,
+        port=port,
+        virtual_host=virtual_host,
+        credentials=credentials
+    )
+
+    try:
+        connection = pika.BlockingConnection(parameters)
+        channel = connection.channel()
+        logger.info("Connected to RabbitMQ successfully.")
+        return channel
+    except Exception as e:
+        logger.error(f"Failed to connect to RabbitMQ: {e}")
+        raise RuntimeError("RabbitMQ connection failed.")
+
 C:\stocksblitz\shared_architecture\shared_architecture\connections\redis.py:
 
+import os
 import logging
-from redis.asyncio import RedisCluster
-from fastapi import FastAPI
 import socket
-# Logging Configuration
+from shared_architecture.config.config_loader import get_env
+from typing import Optional
+from redis.asyncio import Redis, RedisCluster
+from redis.cluster import ClusterNode
+
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
-class AsyncRedisConnectionPool:
-    def __init__(self, config: dict):
-        """
-        Initialize Redis connection pool using redis.asyncio.
 
-        Args:
-            config (dict): Configuration dictionary with Redis parameters.
-        """
-        self.config = config
-        self.redis = None  # Redis async connection instance
-        logging.info(f"AsyncRedisConnectionPool initialized with config: {self.config}")
-    def discover_redis_nodes(service="redis-cluster", namespace="default", port=6379):
-        try:
-            hosts = socket.gethostbyname_ex(f"{service}.{namespace}.svc.cluster.local")[2]
-            return [{"host": ip, "port": port} for ip in hosts]
-        except Exception as e:
-            logging.error(f"Failed to discover Redis Cluster nodes: {e}")
-            return []
-    def connect(self):
-        startup_nodes = self.discover_redis_nodes()
-        self.redis = RedisCluster(
+redis_client_instance=None  
+async def get_redis_connection():
+    global redis_client_instance
+
+    if redis_client_instance is None:
+        redis_client_instance = RedisClient()
+        await redis_client_instance.connect()
+
+    if await redis_client_instance.is_connected():
+        return await redis_client_instance.get_connection()
+
+    raise RuntimeError("❌ Redis connection not available.")
+def discover_redis_nodes(service="redis-cluster", namespace="stocksblitz", port=6379):
+    """
+    Resolves Redis cluster startup nodes for both LOCAL and PROD environments.
+    """
+    environment = get_env("ENV", "local").lower()
+    nodes = []
+
+    if environment == "local":
+        # Match your port-forwards here: 6370-6375 on localhost
+        ports = [6370, 6371, 6372, 6373, 6374, 6375]
+        nodes = [{"host": "localhost", "port": p} for p in ports]
+        logging.info(f"🔍 Resolved LOCAL Redis nodes: {nodes}")
+        return nodes
+
+    try:
+        # For Kubernetes internal resolution in production
+        hosts = socket.gethostbyname_ex(f"{service}.{namespace}.svc.cluster.local")[2]
+        nodes = [{"host": ip, "port": port} for ip in hosts]
+        logging.info(f"🔍 Resolved PROD Redis nodes: {nodes}")
+        return nodes
+    except Exception as e:
+        logging.error(f"❌ Failed to discover Redis Cluster nodes: {e}")
+        return []
+
+def get_local_cluster_nodes():
+    # Example with port-forwarded nodes
+    return [
+        ClusterNode("localhost", 6370),
+        ClusterNode("localhost", 6371),
+        ClusterNode("localhost", 6372),
+        ClusterNode("localhost", 6373),
+        ClusterNode("localhost", 6374),
+        ClusterNode("localhost", 6375),
+    ]
+
+def connect_to_redis_cluster():
+    try:
+        startup_nodes = get_local_cluster_nodes()
+        client = RedisCluster(
             startup_nodes=startup_nodes,
             decode_responses=True,
-            max_connections=10,
+            skip_full_coverage_check=True,
         )
-class RedisConnectionPool:
-    async def connect(self):
-        """
-        Establish an async connection to Redis.
-        """
-        try:
-            startup_nodes = discover_redis_nodes()
-            self.redis = RedisCluster(
-                startup_nodes=startup_nodes,
-                decode_responses=True,
-                max_connections=int(self.config.get("redis_max_connections", 10)),
-            )
-            # redis_url = f"redis://{self.config.get('redis_host', 'localhost')}:{self.config.get('redis_port', 6379)}"
-            # self.redis = Redis.from_url(
-            #     redis_url,
-            #     db=int(self.config.get("redis_db", 0)),
-            #     decode_responses=True,  # Ensures responses are returned as strings
-            #     max_connections=int(self.config.get("redis_max_connections", 10)),
-            # )
+        client.ping()
+        logging.info("✅ Connected to Redis Cluster successfully.")
+        return client
+    except Exception as e:
+        logging.error(f"❌ Redis Cluster connection failed: {e}")
+        return None
+def is_local_environment() -> bool:
+    """
+    Determine if running in local dev environment.
+    """
+    return os.getenv("ENV", "local").lower() == "local"
 
-            # Test Redis connection with ping
-            await self.redis.ping()
-            logging.info("Connected to Redis successfully.")
+
+async def connect_to_redis():
+    """
+    Connect to Redis based on environment (Local or Production).
+    Returns a Redis or RedisCluster instance.
+    """
+    if is_local_environment():
+        logging.info("🔍 Using single-node Redis on localhost (port-forwarded).")
+        redis_url = f"redis://localhost:{os.getenv('REDIS_PORT', 6379)}"
+        client = Redis.from_url(redis_url, decode_responses=True)
+    else:
+        logging.info("🔍 Discovering Redis Cluster nodes in production.")
+        startup_nodes = discover_redis_nodes()
+        if not startup_nodes:
+            raise RuntimeError("❌ No Redis cluster nodes found.")
+        client = RedisCluster(
+            startup_nodes=startup_nodes,
+            decode_responses=True,
+            max_connections=int(os.getenv("REDIS_MAX_CONNECTIONS", 10))
+        )
+    try:
+        await client.ping()
+        logging.info("✅ Connected to Redis successfully.")
+        return client
+    except Exception as e:
+        logging.error(f"❌ Failed to connect to Redis: {e}")
+        return None
+class RedisClient:
+    def __init__(self):
+        self.redis = None
+        self.max_connections = int(get_env("REDIS_MAX_CONNECTIONS", 10))
+        self.startup_nodes = self._discover_nodes()
+
+    def _discover_nodes(self):
+        """
+        Discover nodes based on ENV context.
+        Local => localhost with forwarded ports
+        Prod  => K8s DNS-based service discovery
+        """
+        env = get_env("ENV", "local").lower()
+        if env == "local":
+            logging.info("🔍 Resolving Redis nodes for LOCAL environment.")
+            return [
+                ClusterNode("localhost", 6370),
+                ClusterNode("localhost", 6371),
+                ClusterNode("localhost", 6372),
+                ClusterNode("localhost", 6373),
+                ClusterNode("localhost", 6374),
+                ClusterNode("localhost", 6375),
+            ]
+        else:
+            logging.info("🔍 Resolving Redis nodes for K8s PRODUCTION environment.")
+            service = get_env("REDIS_SERVICE_NAME", "redis-cluster")
+            namespace = get_env("REDIS_NAMESPACE", "default")
+            try:
+                import socket
+                hosts = socket.gethostbyname_ex(f"{service}.{namespace}.svc.cluster.local")[2]
+                return [ClusterNode(host, 6379) for host in hosts]
+            except Exception as e:
+                logging.error(f"❌ Failed to resolve Redis nodes: {e}")
+                return []
+
+    def connect(self):
+        try:
+            if not self.startup_nodes:
+                raise RuntimeError("❌ RedisCluster requires at least one startup node.")
+            self.redis = RedisCluster(
+                startup_nodes=self.startup_nodes,
+                decode_responses=True,
+                skip_full_coverage_check=True,
+            )
+            self.redis.ping()  # sync ping
+            logging.info("✅ Connected to Redis Cluster successfully.")
         except Exception as e:
-            logging.error(f"Error connecting to Redis: {e}")
+            logging.error(f"❌ Redis Cluster connection failed: {e}")
             self.redis = None
 
-    async def get_connection(self):
-        """
-        Retrieve the Redis connection.
-
-        Returns:
-            redis.asyncio.Redis | None: Redis connection instance or None if not connected.
-        """
+    def get_connection(self):
         if not self.redis:
-            logging.error("Redis connection is unavailable.")
-            return None
+            raise RuntimeError("❌ Redis connection not initialized.")
         return self.redis
-
+    
     async def is_connected(self):
         """
-        Check if Redis connection is available.
-
-        Returns:
-            bool: True if connected, False otherwise.
+        Check if the Redis Cluster client is connected and responsive.
         """
+        if not self.redis:
+            return False
         try:
-            if not self.redis:
-                return False
-            return await self.redis.ping()
+            await self.redis.ping()
+            return True
         except Exception:
             return False
-
-    async def close(self):
-        """
-        Closes the Redis connection pool gracefully.
-        """
-        if self.redis:
-            try:
-                await self.redis.close()
-                logging.info("Redis connection pool closed successfully.")
-            except Exception as e:
-                logging.error(f"Error closing Redis connection pool: {e}")
-C:\stocksblitz\shared_architecture\shared_architecture\connections\redis_connection.py:
+C:\stocksblitz\shared_architecture\shared_architecture\connections\redis_connection_TBD.py:
 
 import os
 import logging
@@ -2758,6 +2778,30 @@ class RedisConnectionFactory:
             return {"status": "unhealthy", "error": "No response to ping"}
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
+C:\stocksblitz\shared_architecture\shared_architecture\connections\session.py:
+
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from shared_architecture.utils.env_config import get_env_var
+
+# Dynamically build DB URL
+POSTGRES_USER = get_env_var("POSTGRES_USER", "tradmin")
+POSTGRES_PASSWORD = get_env_var("POSTGRES_PASSWORD", "tradpass")
+POSTGRES_DB = get_env_var("POSTGRES_DB", "tradingdb")
+POSTGRES_HOST = get_env_var("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = get_env_var("POSTGRES_PORT", "5432")
+
+DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+
+# Shared async engine for TimescaleDB
+async_engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_size=20,
+    max_overflow=10,
+    pool_timeout=30,
+    future=True
+)
 C:\stocksblitz\shared_architecture\shared_architecture\connections\test_mongo.py:
 
 from pymongo import MongoClient
@@ -2777,162 +2821,132 @@ C:\stocksblitz\shared_architecture\shared_architecture\connections\timescaledb.p
 
 import os
 import logging
-import psycopg2
-from sqlalchemy.orm import sessionmaker,Session
-from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.engine.url import URL
-import asyncpg
-
-logging.basicConfig(
- level=logging.INFO,
- format="%(asctime)s - %(levelname)s - %(message)s",
-)
-logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)  # Enable SQLAlchemy logging
-logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)    # Enable connection pool logging
-
-class TimescaleDBConnection:
-  def __init__(self, config: dict):
-    """
-    Initialize TimescaleDB connection.
-
-    Args:
-    config (dict): Configuration dictionary.
-    """
-    self.config = config #.get("services", {}).get("TickerService", {})  # Adjust service name!
-    if not self.config:
-        raise ValueError("TimescaleDB configuration not found")
-    self.engine = self._create_engine()
-    #self.SessionLocal = self._create_session_maker()
-    self.connected = self.engine is not None  # Track connection status
-    logging.info(f"TimescaleDBConnection initialized with config: {self.config}")
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.sql import text
+from shared_architecture.config.config_loader import get_env
+from shared_architecture.mocks.timescaledb_mock import get_mock_timescaledb_session
 
 
-  async def check_timescaledb_health():
-      try:
-          conn = await asyncpg.connect(
-              user=os.getenv("POSTGRES_USER"),
-              password=os.getenv("POSTGRES_PASSWORD"),
-              database=os.getenv("POSTGRES_DB"),
-              host=os.getenv("POSTGRES_HOST"),
-              port=int(os.getenv("POSTGRES_PORT")),
-          )
-          await conn.execute("SELECT 1;")
-          await conn.close()
-          return {"status": "healthy"}
-      except Exception as e:
-          return {"status": "unhealthy", "error": str(e)}
+logger = logging.getLogger(__name__)
 
+__all__ = ["get_timescaledb_session", "get_timescaledb_client", "close_timescaledb_client", "test_timescaledb_connection"]
 
-  # def _create_engine(self):
-  #   """
-  #   Creates the SQLAlchemy engine, handling connection errors.
-  #   """
-  #   db_url = self._get_database_url()
-  #   try:
-  #     engine = create_engine(
-  #       db_url,
-  #       pool_size=int(self.config.get("pool_size", 10)),
-  #       max_overflow=int(self.config.get("max_overflow", 5)),
-  #       pool_timeout=int(self.config.get("pool_timeout", 30)),
-  #       pool_recycle=int(self.config.get("pool_recycle", 1800)),
-  #     )
-  #     engine.connect()  # Try to connect immediately
-  #     return engine
-  #   except SQLAlchemyError as e:
-  #     logging.error(f"Error connecting to TimescaleDB: {e}")
-  #     return None  # Return None on failure
+# --- Singleton Containers ---
+_engine = None
+_SessionFactory = None
+_timescaledb_client = None
 
-  def _create_session_maker(self):
-    """
-    Creates the SQLAlchemy session maker.
-    """
-    if self.engine:
-      return sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
-    else:
-      return None
+def get_timescaledb_session() -> async_sessionmaker[AsyncSession]:
+    global _engine, _SessionFactory
 
-  def _get_database_url(self) -> str:
-    """
-    Constructs the database URL from configuration.
-    """
-    return (
-      f"postgresql://{self.config.get('postgres_user')}:"
-      f"{self.config.get('postgres_password')}@"
-      f"{self.config.get('postgres_host')}:"
-      f"{self.config.get('postgres_port')}/"
-      f"{self.config.get('postgres_database')}"
-      )
+    if _SessionFactory:
+        return _SessionFactory
 
-  def get_session(self):
-    """
-    Provides a database session if connected, otherwise None.
-    """
-    if self.engine:
-      return Session(self.engine)
-    else:
-      logging.warning("TimescaleDB session requested, but connection is unavailable.")
-      return None
+    if get_env("USE_MOCKS", default=False)==False:
+        logger.warning("[TimescaleDB] Using TimescaleDBMock due to USE_MOCKS=true")
+        _SessionFactory = get_mock_timescaledb_session()
+        return _SessionFactory
 
-  def is_connected(self):
-    """
-    Returns True if the connection is established, False otherwise.
-    """
-    return self.connected
+    db_user = get_env("TIMESCALEDB_USER", default="tradmin")
+    db_pass = get_env("TIMESCALEDB_PASSWORD", default="tradpass")
+    db_host = get_env("TIMESCALEDB_HOST", default="localhost")
+    db_port = get_env("TIMESCALEDB_PORT", default="5432")
+    db_name = get_env("TIMESCALEDB_DB", default="tradingdb")
 
-  def close(self):
-    """
-    Closes the connection.
-    """
-    if self.engine:
-      self.engine.dispose()  # Dispose of the engine
-      logging.info("TimescaleDB connection closed.")
-    
-  def _create_engine(self):
-      db_config = self.config #.get("services", {}).get("TickerService", {})
-      if not db_config:
-          raise ValueError("TimescaleDB configuration not found")
+    db_url = f"postgresql+asyncpg://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+    print(db_url)
+    _engine = create_async_engine(db_url, echo=False, pool_pre_ping=True)
+    _SessionFactory = async_sessionmaker(bind=_engine, class_=AsyncSession, expire_on_commit=False)
+    return _SessionFactory
 
-      host = db_config.get("postgres_host")
-      port = db_config.get("postgres_port")
-      user = db_config.get("postgres_user")
-      password = db_config.get("postgres_password")
-      database = db_config.get("postgres_database")
+async def get_timescaledb_client() -> AsyncSession:
+    global _timescaledb_client
 
-      if not all([host, port, user, password, database]):
-          raise ValueError("Incomplete TimescaleDB configuration")
-      url_str = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
-      # url = URL.create(
-      #     "postgresql+psycopg2",
-      #     username=user,
-      #     password=password,
-      #     host=host,
-      #     port=port,
-      #     database=database
-      # )
+    if _timescaledb_client:
+        return _timescaledb_client
 
-      # Log the URL just before creating the engine
-      logging.info(f"SQLAlchemy URL: {url_str}")
+    session_factory = get_timescaledb_session()
+    _timescaledb_client = session_factory()
+    logger.info("[TimescaleDB] Created new AsyncSession")
+    return _timescaledb_client
 
-      engine = create_engine(url_str)
-      return engine
+async def close_timescaledb_client():
+    global _timescaledb_client
+    if _timescaledb_client:
+        await _timescaledb_client.close()
+        logger.info("[TimescaleDB] AsyncSession closed")
+        _timescaledb_client = None
 
-  def get_engine(self):
-      return self.engine
+async def test_timescaledb_connection(session: AsyncSession):
+    try:
+        result = await session.execute(text("SELECT 1"))
+        row = result.fetchone()
+        if row:
+            logger.info(f"✅ TimescaleDB connection OK: {row[0]}")
+        else:
+            logger.error("❌ TimescaleDB connected but no result from SELECT 1")
+    except Exception as e:
+        logger.error(f"❌ TimescaleDB connection test failed: {e}")
+
+async def run_query(query: str) -> list:
+    """Utility to run raw SQL for debugging or scripting."""
+    async with get_timescaledb_session()() as session:
+        result = await session.execute(text(query))
+        return result.fetchall()
 C:\stocksblitz\shared_architecture\shared_architecture\connections\__init__.py:
 
-# Import necessary classes
-from .rabbitmq import RabbitMQConnection
-from .redis import AsyncRedisConnectionPool
-from .timescaledb import TimescaleDBConnection
-from .mongodb import MongoDBConnection  # Import the new class
+from shared_architecture.config.config_loader import ENV
 
-# Define the module's public API
+# === Live Imports ===
+from .redis import get_redis_connection as _get_live_redis,connect_to_redis
+from .timescaledb import get_timescaledb_session as _get_live_timescaledb_session, test_timescaledb_connection
+from .mongodb import get_live_mongo
+from .rabbitmq import get_rabbitmq_connection as _get_live_rabbitmq_channel
+from .base_connection import close_all_connections
+
+# === Mock Imports (only when needed) ===
+if ENV.use_mocks:
+    from shared_architecture.mocks.redis_mock import RedisMock
+    from shared_architecture.mocks.timescaledb_mock import get_mock_timescaledb_session
+    from shared_architecture.mocks.mongo_mock import MongoMock
+    from shared_architecture.mocks.rabbitmq_mock import get_mock_rabbitmq_channel
+
+# === Dynamic Client Factories ===
+async def get_redis_connection():
+    """
+    Returns Redis connection (mocked or real depending on ENV).
+    """
+    if ENV.use_mocks:
+        return RedisMock()
+    return await _get_live_redis()
+
+def get_timescaledb_session():
+    """
+    Returns TimescaleDB session (mocked or real depending on ENV).
+    """
+    return get_mock_timescaledb_session() if ENV.use_mocks else _get_live_timescaledb_session()
+
+def get_mongo_connection():
+    """
+    Returns Mongo connection (mocked or real depending on ENV).
+    """
+    return MongoMock() if ENV.use_mocks else get_live_mongo()
+
+def get_rabbitmq_connection():
+    """
+    Returns RabbitMQ connection (mocked or real depending on ENV).
+    """
+    return get_mock_rabbitmq_channel() if ENV.use_mocks else _get_live_rabbitmq_channel()
+
+# === Exported Interface ===
 __all__ = [
-    "RabbitMQConnection",
-    "AsyncRedisConnectionPool",  # Updated name to align with your async Redis class
-    "TimescaleDBConnection",
-    "MongoDBConnection",  # Add MongoDBConnection to __all__
+    "get_redis_connection",
+    "get_timescaledb_session",
+    "get_mongo_connection",
+    "get_rabbitmq_connection",
+    "close_all_connections",
+    "test_timescaledb_connection",
+    "connect_to_redis"
 ]
 C:\stocksblitz\shared_architecture\shared_architecture\db\base.py:
 
@@ -3035,6 +3049,9 @@ import logging
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import create_engine
 
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from shared_architecture.config.config_loader import get_env
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -3070,6 +3087,129 @@ def get_db() -> Session:
     finally:
         logger.info("Closing database session")  # Debugging log
         db.close()
+
+DB_URL_ASYNC = get_env("TIMESCALEDB_URL_ASYNC", "postgresql+asyncpg://postgres:postgres@localhost:5432/stocksblitz")
+DB_URL_SYNC = get_env("TIMESCALEDB_URL", "postgresql://postgres:postgres@localhost:5432/stocksblitz")
+
+# === Async Engine (used for FastAPI + async ORM operations) ===
+async_engine = create_async_engine(
+    DB_URL_ASYNC,
+    echo=False,
+    pool_pre_ping=True,
+    future=True,
+)
+
+# Async session maker for FastAPI
+AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
+    bind=async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
+
+# === Sync Engine (used for Alembic migrations or blocking operations) ===
+sync_engine = create_engine(
+    DB_URL_SYNC,
+    pool_pre_ping=True,
+    future=True,
+)
+
+# Sync session maker
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+C:\stocksblitz\shared_architecture\shared_architecture\db\timescaledb_bulk_utils.py:
+
+import time
+import math
+from typing import List, Dict, Any, Callable, Type, Optional
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.orm import DeclarativeMeta
+from sqlalchemy.dialects.postgresql import insert
+from asyncio import wait_for, TimeoutError
+from sqlalchemy import text
+def chunked(data, batch_size):
+    """Yield successive chunks from data."""
+    for i in range(0, len(data), batch_size):
+        yield data[i:i + batch_size]
+
+
+async def bulk_upsert_async(
+    model: Type[DeclarativeMeta],
+    data_list: List[Dict[str, Any]],
+    key_fields: List[str],
+    session_factory: Callable[[], async_sessionmaker],
+    timestamp_fields: Optional[Dict[str, List[str]]] = None,
+    batch_size: int = 100,
+) -> None:
+    """
+    Performs a batched upsert (insert + on conflict update) for a given SQLAlchemy model.
+
+    Args:
+        model: The SQLAlchemy model to upsert into.
+        data_list: List of dictionaries with data to insert.
+        key_fields: Fields used to identify conflicts (e.g., primary keys or unique constraints).
+        session_factory: Callable that returns a new async session factory.
+        timestamp_fields: Optional dict to auto-fill timestamp fields.
+        batch_size: Size of each batch for insertion.
+    """
+    if not data_list:
+        print("⚠️ No data to upsert.")
+        return
+
+    total_records = len(data_list)
+    print(f"🔄 Starting bulk upsert: {total_records} records, batch size = {batch_size}")
+    start_time = time.time()
+
+    # Get valid model fields
+    valid_columns = set(model.__table__.columns.keys())
+    async_session_maker = session_factory()
+    total_batches = math.ceil(len(data_list) / batch_size) 
+    for batch_num, chunk in enumerate(chunked(data_list, batch_size), start=1):
+        print(f"⏳ Preparing batch {batch_num} with {len(chunk)} records...")
+
+        filtered_chunk = [
+            {k: v for k, v in row.items() if k in valid_columns}
+            for row in chunk
+        ]
+        if not filtered_chunk:
+            print(f"⚠️ Batch {batch_num} is empty after filtering. Skipping.")
+            continue
+
+        print(f"🔍 First row of batch {batch_num}/{total_batches}")
+
+        stmt = insert(model).values(filtered_chunk)
+
+        update_fields = {
+            col: getattr(stmt.excluded, col)
+            for col in filtered_chunk[0].keys()
+            if col not in key_fields
+        }
+
+        stmt = stmt.on_conflict_do_update(
+            index_elements=key_fields,
+            set_=update_fields
+        )
+
+        batch_start = time.time()
+        async with async_session_maker() as session:
+            try:
+                await session.execute(text("SET LOCAL lock_timeout = '3s'"))
+                print(f"🚀 Executing batch {batch_num}...")
+                try:
+                    await wait_for(session.execute(stmt), timeout=10)
+                except TimeoutError:
+                    print(f"❌ Timeout: Batch {batch_num} took too long to execute.")
+                    await session.rollback()
+                    continue
+                await session.flush()  # Optional, before commit
+                await session.commit()
+                print(f"📦 Batch {batch_num} committed.")
+                batch_time = time.time() - batch_start
+                print(f"✅ Batch {batch_num} done in {batch_time:.2f}s")
+            except Exception as e:
+                print(f"❌ Error in batch {batch_num}: {e}")
+                await session.rollback()
+
+    total_time = time.time() - start_time
+    print(f"🎉 Upsert complete: {total_records} records in {total_time:.2f}s")
 C:\stocksblitz\shared_architecture\shared_architecture\db\__init__.py:
 
 """
@@ -3087,12 +3227,27 @@ from .session import get_db  # Adjust the module name if necessary
 
 __all__ = ["BaseRepository", "get_db"]
 
+C:\stocksblitz\shared_architecture\shared_architecture\db\models\activity_log.py:
+
+from sqlalchemy import Column, Integer, String, DateTime, Text
+from shared_architecture.db.base import Base
+from shared_architecture.utils.datetime_utils import utc_now 
+import datetime
+
+class ActivityLog(Base):
+    __tablename__ = "activity_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, nullable=False)
+    activity_type = Column(String, nullable=False)
+    details = Column(Text)
+    timestamp = Column(DateTime, default=utc_now())
 C:\stocksblitz\shared_architecture\shared_architecture\db\models\broker.py:
 
 from sqlalchemy import create_engine, Column,Boolean, Integer, Float,String, Date, DateTime, ForeignKey, UniqueConstraint, Text
 from sqlalchemy.ext.declarative import declarative_base
 import datetime 
-
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
 Base = declarative_base()
 
 class Broker(Base):
@@ -3107,17 +3262,17 @@ class Broker(Base):
     password = Column(Text)
     totp_key = Column(Text)
     session_key = Column(Text)
-    session_key_date = Column(Date)
+    session_key_date = Column(TimezoneAwareDateTime())
     symbol_url = Column(Text)
     status = Column(Text)
-    session_starttime = Column(DateTime) # Using DateTime for precise time
+    session_starttime = Column(TimezoneAwareDateTime()) # Using DateTime for precise time
     session_token = Column(Text)
     live_status = Column(Text)
     subscription_limit = Column(Integer)
     daily_api_limit = Column(Integer)
     minute_api_limit = Column(Integer)
     records_per_api_requests = Column(Integer)
-    last_api_call_time = Column(DateTime, default=datetime.datetime.now)
+    last_api_call_time = Column(TimezoneAwareDateTime(), default=datetime.datetime.now)
     minute_api_requests = Column(Integer, default=0)
 
     # Unique constraint
@@ -3137,17 +3292,29 @@ engine = create_engine("postgresql://user:password@localhost/dbname")  # Replace
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 C:\stocksblitz\shared_architecture\shared_architecture\db\models\enums.py:
 
+from enum import Enum
+
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    USER = "user"
+    MANAGER = "manager"
+
+class AccountStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    PENDING = "pending"
+    SUSPENDED = "suspended"
 C:\stocksblitz\shared_architecture\shared_architecture\db\models\historical_data.py:
 
 from sqlalchemy import Column, TIMESTAMP, Text, Double, BigInteger, Date
 from sqlalchemy.ext.declarative import declarative_base
-
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
 Base = declarative_base()
 
 class HistoricalData(Base):
     __tablename__ = 'historical_data'
 
-    time = Column(TIMESTAMP(timezone=True), primary_key=True, nullable=False)
+    time = Column(TimezoneAwareDateTime(), primary_key=True, nullable=False)
     instrument_key = Column(Text, primary_key=True, nullable=False)
     interval = Column(Text, primary_key=True, nullable=False)
 
@@ -3157,7 +3324,7 @@ class HistoricalData(Base):
     close = Column(Double)
     volume = Column(BigInteger)
     oi = Column(BigInteger)
-    expirydate = Column(Date)
+    expirydate = Column(TimezoneAwareDateTime())
     option_type = Column(Text)
     strikeprice = Column(Double)
     
@@ -3189,6 +3356,167 @@ class HistoricalData(Base):
     greeks_close_theta = Column(Double)
     greeks_close_rho = Column(Double)
     greeks_close_vega = Column(Double)
+C:\stocksblitz\shared_architecture\shared_architecture\db\models\holding_model.py:
+
+# trade_service/app/models/holding_model.py
+from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
+Base = declarative_base()
+
+class HoldingModel(Base):
+    __tablename__ = 'holdings'
+    id = Column(Integer, primary_key=True)
+    pseudo_account = Column(String)
+    trading_account = Column(String)
+    exchange = Column(String)
+    symbol = Column(String)
+    quantity = Column(Integer)
+    product = Column(String)
+    isin = Column(String)
+    collateral_qty = Column(Integer)
+    t1_qty = Column(Integer)
+    collateral_type = Column(String)
+    pnl = Column(Float)
+    haircut = Column(Float)
+    avg_price = Column(Float)
+    instrument_token = Column(Integer)
+    stock_broker = Column(String)
+    platform = Column(String)
+    ltp = Column(Float)
+    currentValue = Column(Float)
+    totalQty = Column(Integer)
+    timestamp = Column(TimezoneAwareDateTime(), default=datetime.utcnow)
+    instrument_key = Column(String, ForeignKey('symbols.instrument_key'))
+    strategy_id = Column(String)
+    source_strategy_id = Column(String, nullable=True)
+C:\stocksblitz\shared_architecture\shared_architecture\db\models\margin_model.py:
+
+# trade_service/app/models/margin_model.py
+from sqlalchemy import UniqueConstraint, Column, Integer, Float, String, Boolean, DateTime, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
+Base = declarative_base()
+
+class MarginModel(Base):
+    __tablename__ = 'margins'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    adhoc = Column(Float)
+    available = Column(Float)
+    category = Column(String)
+    collateral = Column(Float)
+    exposure = Column(Float)
+    funds = Column(Float)
+    net = Column(Float)
+    payin = Column(Float)
+    payout = Column(Float)
+    pseudo_account = Column(String)
+    realised_mtm = Column(Float)
+    span = Column(Float)
+    stock_broker = Column(String)
+    total = Column(Float)
+    trading_account = Column(String)
+    unrealised_mtm = Column(Float)
+    utilized = Column(Float)
+    active = Column(Boolean, default=True)
+    margin_date = Column(TimezoneAwareDateTime())
+    instrument_key = Column(String, ForeignKey('symbols.instrument_key'))
+    __table_args__ = (UniqueConstraint('pseudo_account', 'category', 'margin_date'),)
+C:\stocksblitz\shared_architecture\shared_architecture\db\models\order_model.py:
+
+# trade_service/app/models/order_model.py
+from sqlalchemy import Column, Integer, Float, String, Boolean, DateTime, ForeignKey, Enum
+from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime
+import enum
+from sqlalchemy.orm import relationship
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
+Base = declarative_base()
+
+class OrderModel(Base):
+    __tablename__ = 'orders'
+    id = Column(Integer, primary_key=True)
+    amo = Column(Boolean)
+    average_price = Column(Float)
+    client_id = Column(String)
+    disclosed_quantity = Column(Integer)
+    exchange = Column(String)
+    exchange_order_id = Column(String)
+    exchange_time = Column(TimezoneAwareDateTime())
+    filled_quantity = Column(Integer)
+    independent_exchange = Column(String, nullable=True)
+    independent_symbol = Column(String, nullable=True)
+    modified_time = Column(TimezoneAwareDateTime(),nullable=True)
+    nest_request_id = Column(String, nullable=True)
+    order_type = Column(String)
+    parent_order_id = Column(Integer, nullable=True)
+    pending_quantity = Column(Integer)
+    platform = Column(String)
+    platform_time = Column(TimezoneAwareDateTime())
+    price = Column(Float)
+    pseudo_account = Column(String)
+    publisher_id = Column(String, nullable=True)
+    status = Column(String)
+    status_message = Column(String, nullable=True)
+    stock_broker = Column(String)
+    symbol = Column(String)
+    trade_type = Column(String)
+    trading_account = Column(String)
+    trigger_price = Column(Float, nullable=True)
+    validity = Column(String)
+    variety = Column(String)
+    timestamp = Column(TimezoneAwareDateTime(), default=datetime.utcnow)
+    instrument_key = Column(String, ForeignKey('symbols.instrument_key'))
+    strategy_id = Column(String)
+    transition_type = Column(Enum('OrderTransitionType'), default='NONE')
+    events = relationship("OrderEventModel", backref="order", cascade="all, delete-orphan")  # NEW: Relationship
+C:\stocksblitz\shared_architecture\shared_architecture\db\models\position_model.py:
+
+# trade_service/app/models/position_model.py
+from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
+Base = declarative_base()
+
+class PositionModel(Base):
+    __tablename__ = 'positions'
+    id = Column(Integer, primary_key=True)
+    account_id = Column(String)
+    atPnl = Column(Float)
+    buy_avg_price = Column(Float)
+    buy_quantity = Column(Integer)
+    buy_value = Column(Float)
+    category = Column(String)
+    direction = Column(String)
+    exchange = Column(String)
+    independent_exchange = Column(String, nullable=True)
+    independent_symbol = Column(String, nullable=True)
+    ltp = Column(Float)
+    mtm = Column(Float)
+    multiplier = Column(Integer)
+    net_quantity = Column(Integer)
+    net_value = Column(Float)
+    overnight_quantity = Column(Integer)
+    platform = Column(String)
+    pnl = Column(Float)
+    pseudo_account = Column(String)
+    realised_pnl = Column(Float)
+    sell_avg_price = Column(Float)
+    sell_quantity = Column(Integer)
+    sell_value = Column(Float)
+    state = Column(String)
+    stock_broker = Column(String)
+    symbol = Column(String)
+    trading_account = Column(String)
+    type = Column(String)
+    unrealised_pnl = Column(Float)
+    timestamp = Column(TimezoneAwareDateTime(), default=datetime.utcnow)
+    instrument_key = Column(String, ForeignKey('symbols.instrument_key'))
+    strategy_id = Column(String)
+    source_strategy_id = Column(String, nullable=True)
 C:\stocksblitz\shared_architecture\shared_architecture\db\models\stocksdeveloper.py:
 
 """ Include SQLAlchemy objects for orders, Positions, Margins, holdings"""
@@ -3197,109 +3525,144 @@ C:\stocksblitz\shared_architecture\shared_architecture\db\models\strategy.py:
 """SQL Alchemy model for Strategy and Legs"""
 C:\stocksblitz\shared_architecture\shared_architecture\db\models\symbol.py:
 
-from sqlalchemy import create_engine, Column,Boolean, Integer, Float,String, Date, DateTime, ForeignKey, UniqueConstraint, Text
+from sqlalchemy import (
+    Boolean, Column, Date, DateTime, Float, Integer, String, Text, UniqueConstraint
+)
 from sqlalchemy.ext.declarative import declarative_base
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
 
 Base = declarative_base()
+
 class Symbol(Base):
     __tablename__ = "symbols"
-    __table_args__ = {'schema': 'tradingdb'}
-    id = Column(Integer, primary_key=True)  
+    __table_args__ = (
+        UniqueConstraint('instrument_key'),
+        {'schema': 'tradingdb'}
+    )
+
     instrument_key = Column(String, primary_key=True)
     stock_token = Column(String)
-    instrumentname = Column(String)
+    instrument_name = Column(String)
     stock_code = Column(String)
     series = Column(String)
-    expirydate = Column(Date) # Changed to Date
-    strikeprice = Column(Float)
-    optiontype = Column(String)
-    calevel = Column(String)
-    permittedtotrade = Column(Boolean) # Changed to Boolean
-    issuecapital = Column(Float)
-    warningqty = Column(Integer)
-    freezeqty = Column(Integer)
-    creditrating = Column(String)
-    normalmarketstatus = Column(String)
-    oddlotmarketstatus = Column(String)
-    spotmarketstatus = Column(String)
-    auctionmarketstatus = Column(String)
-    normalmarketeligibility = Column(String)
-    oddlotmarketeligibility = Column(String)
-    spotmarketeligibility = Column(String)
-    auctionmarketeligibility = Column(String)
-    scripid = Column(String)
-    issuerate = Column(Float)
-    issuestartdate = Column(Date)
-    interestpaymentdate = Column(Date)
-    issuematuritydate = Column(Date)
-    marginpercentage = Column(Float)
-    minimumlotqty = Column(Integer)
-    lotsize = Column(Integer)
-    ticksize = Column(Float)
-    companyname = Column(String)
-    listingdate = Column(Date)
-    expulsiondate = Column(Date)
-    readmissiondate = Column(Date)
-    recorddate = Column(Date)
-    lowpricerange = Column(Float)
-    highpricerange = Column(Float)
-    securityexpirydate = Column(Date)
-    nodeliverystartdate = Column(Date)
-    nodeliveryenddate = Column(Date)
-    mf = Column(String)
+    expiry_date = Column(TimezoneAwareDateTime)
+    strike_price = Column(Float)
+    option_type = Column(String)
+    ca_level = Column(String)
+    permitted_to_trade = Column(Boolean)
+    issue_capital = Column(Float)
+    warning_qty = Column(Integer)
+    freeze_qty = Column(Integer)
+    credit_rating = Column(String)
+    normal_market_status = Column(String)
+    odd_lot_market_status = Column(String)
+    spot_market_status = Column(String)
+    auction_market_status = Column(String)
+    normal_market_eligibility = Column(String)
+    odd_lot_market_eligibility = Column(String)
+    spot_market_eligibility = Column(String)
+    auction_market_eligibility = Column(String)
+    scrip_id = Column(String)
+    issue_rate = Column(Float)
+    issue_start_date = Column(TimezoneAwareDateTime)
+    interest_payment_date = Column(TimezoneAwareDateTime)
+    issue_maturity_date = Column(TimezoneAwareDateTime)
+    margin_percentage = Column(Float)
+    minimum_lot_qty = Column(Integer)
+    lot_size = Column(Integer)
+    tick_size = Column(Float)
+    company_name = Column(String)
+    listing_date = Column(TimezoneAwareDateTime)
+    expulsion_date = Column(TimezoneAwareDateTime)
+    readmission_date = Column(TimezoneAwareDateTime)
+    record_date = Column(TimezoneAwareDateTime)
+    low_price_range = Column(Float)
+    high_price_range = Column(Float)
+    security_expiry_date = Column(TimezoneAwareDateTime)
+    no_delivery_start_date = Column(TimezoneAwareDateTime)
+    no_delivery_end_date = Column(TimezoneAwareDateTime)
     aon = Column(String)
-    participantinmarketindex = Column(String)
-    bookclsstartdate = Column(Date)
-    bookclsenddate = Column(Date)
-    excercisestartdate = Column(Date)
-    excerciseenddate = Column(Date)
-    oldtoken = Column(String)
-    assetinstrument = Column(String)
-    assetname = Column(String)
-    assettoken = Column(Integer)
-    intrinsicvalue = Column(Float)
-    extrinsicvalue = Column(Float)
-    excercisestyle = Column(String)
+    participant_in_market_index = Column(String)
+    book_cls_start_date = Column(TimezoneAwareDateTime)
+    book_cls_end_date = Column(TimezoneAwareDateTime)
+    excercise_start_date = Column(TimezoneAwareDateTime)
+    excercise_end_date = Column(TimezoneAwareDateTime)
+    old_token = Column(String)
+    asset_instrument = Column(String)
+    asset_name = Column(String)
+    asset_token = Column(Integer)
+    intrinsic_value = Column(Float)
+    extrinsic_value = Column(Float)
+    excercise_style = Column(String)
     egm = Column(String)
     agm = Column(String)
     interest = Column(String)
     bonus = Column(String)
     rights = Column(String)
     dividends = Column(String)
-    exallowed = Column(String)
-    exrejectionallowed = Column(Boolean) # Changed to Boolean
-    plallowed = Column(Boolean) # Changed to Boolean
-    isthisasset = Column(Boolean) # Changed to Boolean
-    iscorpadjusted = Column(Boolean) # Changed to Boolean
-    localupdatedatetime = Column(DateTime)
-    deleteflag = Column(Boolean) # Changed to Boolean
+    ex_allowed = Column(String)
+    ex_rejection_allowed = Column(Boolean)
+    pl_allowed = Column(Boolean)
+    is_this_asset = Column(Boolean)
+    is_corp_adjusted = Column(Boolean)
+    local_update_datetime = Column(DateTime)
+    delete_flag = Column(Boolean)
     remarks = Column(String)
-    baseprice = Column(Float)
-    exchangecode = Column(String)
-    expirydate = Column(DateTime)
+    base_price = Column(Float)
     exchange_code = Column(String)
     product_type = Column(String)
-
-    __table_args__ = (UniqueConstraint('instrument_key'),)
-
+    breeze_token = Column(String)
+    kite_token = Column(String)
+    board_lot_qty = Column(Integer)
+    date_of_delisting = Column(TimezoneAwareDateTime)
+    date_of_listing = Column(TimezoneAwareDateTime)
+    face_value = Column(Float)
+    freeze_percent = Column(Float)
+    high_date = Column(TimezoneAwareDateTime)
+    isin_code = Column(String)
+    instrument_type = Column(String)
+    issue_price = Column(Float)
+    life_time_high = Column(Float)
+    life_time_low = Column(Float)
+    low_date = Column(TimezoneAwareDateTime)
+    avm_buy_margin = Column(Float)
+    avm_sell_margin = Column(Float)
+    bcast_flag = Column(Boolean)
+    group_name = Column(String)
+    market_lot = Column(Integer)
+    nde_date = Column(TimezoneAwareDateTime)
+    nds_date = Column(TimezoneAwareDateTime)
+    nd_flag = Column(Boolean)
+    scrip_code = Column(String)
+    scrip_name = Column(String)
+    susp_status = Column(String)
+    suspension_reason = Column(String)
+    suspension_date = Column(TimezoneAwareDateTime)
+    refresh_flag = Column(Boolean)
+    first_added_datetime = Column(DateTime)
+    weeks_52_high = Column(Float)
+    weeks_52_low = Column(Float)
+    symbol = Column(String)
+    short_name = Column(String)
+    mfill = Column(String)
 C:\stocksblitz\shared_architecture\shared_architecture\db\models\symbol_update.py:
 
 
 from sqlalchemy import create_engine, Column,Boolean, Integer, Float,String, Date, DateTime, ForeignKey, UniqueConstraint, Text
 from sqlalchemy.ext.declarative import declarative_base
-
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
 Base = declarative_base()
 class SymbolUpdateStatus(Base):
     __tablename__ = "symbols_update_status"
     broker_name = Column(String, primary_key=True)
-    update_date = Column(Date, primary_key=True)
-    update_time = Column(DateTime)
+    update_date = Column(TimezoneAwareDateTime(), primary_key=True)
+    update_time = Column(TimezoneAwareDateTime())
     
 C:\stocksblitz\shared_architecture\shared_architecture\db\models\tick_data.py:
 
 from sqlalchemy import Column, TIMESTAMP, Text, Double, BigInteger, Date
 from sqlalchemy.ext.declarative import declarative_base
-
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
 Base = declarative_base()
 
 class TickData(Base):
@@ -3309,13 +3672,13 @@ class TickData(Base):
     instrument_key = Column(Text, primary_key=True, nullable=False)
     interval = Column(Text, primary_key=True, nullable=False)
 
-    open = Column(Double)
-    high = Column(Double)
-    low = Column(Double)
-    close = Column(Double)
+    open = Column(TimezoneAwareDateTime())
+    high = Column(TimezoneAwareDateTime())
+    low = Column(TimezoneAwareDateTime())
+    close = Column(TimezoneAwareDateTime())
     volume = Column(BigInteger)
     oi = Column(BigInteger)
-    expirydate = Column(Date)
+    expirydate = Column(TimezoneAwareDateTime())
     option_type = Column(Text)
     strikeprice = Column(Double)
     
@@ -3354,7 +3717,8 @@ C:\stocksblitz\shared_architecture\shared_architecture\db\models\__init__.py:
 
 from .broker import *
 from .database import *
-from .enums import *
+from .enums import UserRole, AccountStatus
+from .activity_log import ActivityLog
 from .historical_data import *
 from .stocksdeveloper import *
 from .strategy import *
@@ -3362,6 +3726,8 @@ from .symbol import *
 from .symbol_update import *
 from .tick_data import *
 from .users import *
+
+__all__ = ["UserRole", "AccountStatus", "ActivityLog", "Broker", "Symbol", "HistoricalData", "TickData", "SymbolUpdateStatus"]
 C:\stocksblitz\shared_architecture\shared_architecture\errors\custom_exceptions.py:
 
 class ServiceUnavailableError(Exception):
@@ -3378,89 +3744,187 @@ class ServiceUnavailableError(Exception):
             message = f"Service '{service_name}' unavailable"
         self.message = message
         super().__init__(self.message)
+C:\stocksblitz\shared_architecture\shared_architecture\mocks\mongo_mock.py:
+
+class MongoMock:
+    def __init__(self):
+        self.databases = {}
+
+    def __getattr__(self, db_name):
+        return self.databases.setdefault(db_name, MongoDatabase())
+
+class MongoDatabase:
+    def __init__(self):
+        self.collections = {}
+
+    def __getattr__(self, collection_name):
+        return self.collections.setdefault(collection_name, MongoCollection())
+
+class MongoCollection:
+    def __init__(self):
+        self.documents = []
+
+    def insert_one(self, document):
+        self.documents.append(document)
+        return {"inserted_id": len(self.documents)}
+
+    def find_one(self, filter_dict):
+        for doc in self.documents:
+            if all(doc.get(k) == v for k, v in filter_dict.items()):
+                return doc
+        return None
+C:\stocksblitz\shared_architecture\shared_architecture\mocks\rabbitmq_mock.py:
+
+class RabbitMQMockChannel:
+    def __init__(self):
+        self.published_messages = []
+
+    def basic_publish(self, exchange, routing_key, body, properties=None):
+        self.published_messages.append({
+            "exchange": exchange,
+            "routing_key": routing_key,
+            "body": body,
+            "properties": properties
+        })
+
+def get_mock_rabbitmq_channel():
+    return RabbitMQMockChannel()
+C:\stocksblitz\shared_architecture\shared_architecture\mocks\redis_mock.py:
+
+class RedisMock:
+    def __init__(self):
+        self.store = {}
+
+    async def hset(self, key, field, value):
+        self.store.setdefault(key, {})[field] = value
+
+    async def hget(self, key, field):
+        return self.store.get(key, {}).get(field)
+
+    async def xadd(self, key, fields, id='*'):
+        self.store.setdefault(key, []).append((id, fields))
+
+    async def xrange(self, key, start='-', end='+'):
+        return self.store.get(key, [])
+
+    async def ping(self):
+        return True
+C:\stocksblitz\shared_architecture\shared_architecture\mocks\timescaledb_mock.py:
+
+from unittest.mock import MagicMock
+
+def get_mock_timescaledb_session():
+    mock_session = MagicMock()
+    return mock_session
+C:\stocksblitz\shared_architecture\shared_architecture\mocks\__init__.py:
+
+C:\stocksblitz\shared_architecture\shared_architecture\utils\custom_types.py:
+
+from sqlalchemy.types import TypeDecorator, DateTime
+import pytz
+import datetime
+from dateutil.parser import parse as parse_datetime
+
+class TimezoneAwareDateTime(TypeDecorator):
+    impl = DateTime(timezone=True)
+
+    def __init__(self, timezone=None, **kwargs):
+        super().__init__(**kwargs)
+        self.timezone = pytz.timezone(timezone or "Asia/Kolkata")
+
+    def process_bind_param(self, value, dialect):
+        """
+        Convert input value to timezone-aware datetime before storing in DB.
+        Handles:
+        - None or empty
+        - String inputs (with dateutil parsing)
+        - datetime.date (converted to datetime)
+        - naive datetime (assumes UTC)
+        """
+        if not value:
+            return None
+
+        if isinstance(value, str):
+            try:
+                value = parse_datetime(value)
+            except Exception as e:
+                raise ValueError(f"Invalid datetime string: {value}") from e
+
+        if isinstance(value, datetime.date) and not isinstance(value, datetime.datetime):
+            value = datetime.datetime.combine(value, datetime.time.min)
+
+        if not isinstance(value, datetime.datetime):
+            raise TypeError(f"Unsupported type for DateTime: {type(value)}")
+
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=datetime.timezone.utc)
+
+        return value.astimezone(self.timezone)
+
+    def process_result_value(self, value, dialect):
+        """Convert stored UTC datetime to configured timezone on read."""
+        if value:
+            if isinstance(value, datetime.date) and not isinstance(value, datetime.datetime):
+                value = datetime.datetime(value.year, value.month, value.day)  # Convert `date` to `datetime`
+                value = value.replace(tzinfo=datetime.timezone.utc)  # Explicitly set UTC timezone
+
+            return value.astimezone(self.timezone)  # Convert to the desired timezone
+        
+        return value
 C:\stocksblitz\shared_architecture\shared_architecture\utils\datetime_utils.py:
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.schemas import subscription as subscription_schema
-from app.services import broker_service, symbol_service
-from shared_architecture.db import get_db
+
+import pandas as pd
+from datetime import datetime, date, timezone
+
+
+def utc_now() -> datetime:
+    """Returns current UTC time as a timezone-aware datetime object."""
+    return datetime.now(timezone.utc)
+
+
+def format_datetime_utc(dt: datetime) -> str:
+    if dt is None:
+        return ""
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+
+
+C:\stocksblitz\shared_architecture\shared_architecture\utils\keycloak_helper.py:
+
+import requests
 import logging
 
-router = APIRouter()
-
-
-@router.post("/subscribe/", status_code=200)
-async def subscribe_to_symbol(
-    subscription: subscription_schema.SubscriptionCreate,
-    db: Session = Depends(get_db),
-    interval: str = '1second',
-    get_market_depth: bool = False,
-    get_exchange_quotes: bool = True
-):
-    """
-    Endpoint to subscribe to a symbol for real-time feeds.
-    """
+def get_access_token(auth_url, client_id, client_secret, username, password):
     try:
-        broker = await broker_service.get_broker_details(db)
-
-        # Retrieve broker-specific token
-        broker_token = await symbol_service.get_broker_token(
-            db, subscription.instrument_key, broker.broker_name
-        )
-
-        # Check subscription limit
-        if broker.subscription_limit is not None:
-            # get count of current subscriptions.
-            # replace with actual count query.
-            count = 0
-            if count >= broker.subscription_limit:
-                raise HTTPException(
-                    status_code=429, detail="Subscription limit exceeded"
-                )
-
-        await broker_service.subscribe_to_symbol(
-            broker,
-            subscription.instrument_key,
-            broker_token,
-            interval,
-            get_market_depth,
-            get_exchange_quotes,
-        )
-        return {"message": "Subscription successful"}
-    except HTTPException as e:
-        raise e
+        data = {
+            "grant_type": "password",
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "username": username,
+            "password": password
+        }
+        response = requests.post(auth_url, data=data)
+        response.raise_for_status()
+        return response.json().get("access_token")
     except Exception as e:
-        logging.error(f"Error subscribing to symbol: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"Error getting Keycloak token: {e}")
+        raise
 
-
-@router.post("/unsubscribe/", status_code=200)
-async def unsubscribe_from_symbol(
-    subscription: subscription_schema.SubscriptionCreate,
-    db: Session = Depends(get_db),
-    interval: str = '1second'
-):
-    """
-    Endpoint to unsubscribe from a symbol.
-    """
+def refresh_access_token(refresh_url, client_id, client_secret, refresh_token):
     try:
-        broker = await broker_service.get_broker_details(db)
-
-        # Retrieve broker-specific token
-        broker_token = await symbol_service.get_broker_token(
-            db, subscription.instrument_key, broker.broker_name
-        )
-
-        await broker_service.unsubscribe_from_symbol(
-            broker, subscription.instrument_key, broker_token, interval
-        )
-        return {"message": "Unsubscription successful"}
-    except HTTPException as e:
-        raise e
+        data = {
+            "grant_type": "refresh_token",
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "refresh_token": refresh_token
+        }
+        response = requests.post(refresh_url, data=data)
+        response.raise_for_status()
+        return response.json().get("access_token")
     except Exception as e:
-        logging.error(f"Error unsubscribing from symbol: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"Error refreshing Keycloak token: {e}")
+        raise
 C:\stocksblitz\shared_architecture\shared_architecture\utils\logging_utils.py:
 
 import logging
@@ -3523,7 +3987,9 @@ C:\stocksblitz\shared_architecture\shared_architecture\utils\other_helpers.py:
 
 import logging
 import os
-
+from typing import Dict, Any, Optional, Type, Union
+from datetime import datetime,date
+import pandas as pd
 # Generic helper for validating environment variables
 def validate_env_variable(var_name: str):
     """
@@ -3582,185 +4048,448 @@ def log_error(exception, context=""):
         context (str): Additional context about where the error occurred.
     """
     logging.error(f"Error in {context}: {exception}")
+
+def safe_convert(value: Any, target_type: Type, default: Optional[Any] = None):
+    """
+    Safely converts a value to the target type, handling None and potential conversion errors.
+    """
+    if value is None:
+        return default
+    try:
+        return target_type(value)
+    except (ValueError, TypeError):
+        return default
+    except Exception as e:
+        print(f"Unexpected error during conversion: {e}")
+        return default
+
+
+def safe_convert_int(value: Any, default: Optional[int] = None) -> Optional[int]:
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+    except Exception as e:
+        print(f"Unexpected error converting to int: {e}")
+        return default
+
+
+def safe_convert_float(value: Any, default: Optional[float] = None) -> Optional[float]:
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+    except Exception as e:
+        print(f"Unexpected error converting to float: {e}")
+        return default
+
+
+def safe_convert_bool(value: Any, default: Optional[bool] = None) -> Optional[bool]:
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return bool(value)
+    elif isinstance(value, str):
+        if value.lower() in ("true", "1", "yes"):
+            return True
+        elif value.lower() in ("false", "0", "no"):
+            return False
+        else:
+            return default
+    else:
+        try:
+            return bool(value)
+        except (ValueError, TypeError):
+            return default
+        except Exception as e:
+            print(f"Unexpected error converting to bool: {e}")
+            return default
+
+
+def safe_parse_datetime(date_input: Union[str, datetime, date, pd.Timestamp]) -> Optional[datetime]:
+    if date_input is None or pd.isna(date_input):
+        return None
+    if isinstance(date_input, datetime):
+        return date_input
+    if isinstance(date_input, date):
+        return datetime(date_input.year, date_input.month, date_input.day)
+    if isinstance(date_input, str):
+        formats = [
+            '%Y-%m-%d %H:%M:%S.%f',
+            '%Y-%m-%d %H:%M:%S',
+            '%Y-%m-%d',
+            '%d-%b-%Y',
+            '%d-%m-%Y %H:%M:%S',
+            '%d/%m/%Y',
+            '%m/%d/%Y',
+            '%Y/%m/%d',
+            '%Y%m%d',
+            '%d%m%Y'
+        ]
+        for fmt in formats:
+            try:
+                return datetime.strptime(date_input, fmt)
+            except ValueError:
+                pass
+    return None
+
+def safe_parse_date(date_input: Union[str, date, pd.Timestamp]) -> Optional[date]:
+    if date_input is None or pd.isna(date_input):
+        return None
+    
+    if isinstance(date_input, date):
+        return date_input  # Already a date object
+    
+    if isinstance(date_input, str):
+        formats = [
+            '%Y-%m-%d',
+            '%d-%b-%Y',
+            '%d-%m-%Y',
+            '%d/%m/%Y',
+            '%m/%d/%Y',
+            '%Y/%m/%d',
+            '%Y%m%d',
+            '%d%m%Y'
+        ]
+        for fmt in formats:
+            try:
+                return datetime.strptime(date_input, fmt).date()  # Convert to date, NOT datetime
+            except ValueError:
+                pass
+    
+    return None  # If parsing fails
+C:\stocksblitz\shared_architecture\shared_architecture\utils\rabbitmq_helper.py:
+
+import pika
+import json
+import logging
+
+def publish_message(rabbitmq_url, queue_name, message):
+    try:
+        connection = pika.BlockingConnection(pika.URLParameters(rabbitmq_url))
+        channel = connection.channel()
+        channel.queue_declare(queue=queue_name, durable=True)
+
+        channel.basic_publish(
+            exchange='',
+            routing_key=queue_name,
+            body=json.dumps(message),
+            properties=pika.BasicProperties(delivery_mode=2)  # make message persistent
+        )
+        logging.info(f"Message published to {queue_name}")
+        connection.close()
+    except Exception as e:
+        logging.error(f"Error publishing message to {queue_name}: {e}")
+        raise
+C:\stocksblitz\shared_architecture\shared_architecture\utils\redis_batch_reader.py:
+
+# shared_architecture/redis/redis_batch_reader.py
+
+from typing import Optional, List
+from redis.asyncio import Redis
+import logging
+
+logger = logging.getLogger(__name__)
+
+class RedisBatchReader:
+    def __init__(self, redis: Redis):
+        self.redis = redis
+
+    async def read_latest(self, key: str, count: int = 1) -> Optional[List[str]]:
+        try:
+            result = await self.redis.lrange(key, -count, -1)
+            logger.info(f"📖 Read {len(result)} entries from {key}")
+            return [r.decode("utf-8") if isinstance(r, bytes) else r for r in result]
+        except Exception as e:
+            logger.exception(f"❌ Error reading from Redis key: {key}")
+            return None
+
+    async def read_all(self, key: str) -> Optional[List[str]]:
+        try:
+            result = await self.redis.lrange(key, 0, -1)
+            logger.info(f"📖 Read all {len(result)} entries from {key}")
+            return [r.decode("utf-8") if isinstance(r, bytes) else r for r in result]
+        except Exception as e:
+            logger.exception(f"❌ Error reading all from Redis key: {key}")
+            return None
+C:\stocksblitz\shared_architecture\shared_architecture\utils\redis_batch_writer.py:
+
+# shared_architecture/redis/redis_batch_writer.py
+import asyncio
+import json
+import logging
+from typing import Any, Dict
+
+class RedisBatchWriter:
+    def __init__(self, redis):
+        self.redis = redis
+        self.batch_queue = asyncio.Queue()
+        self.failure_queue = asyncio.Queue()
+        self.batch_size = 100
+        self.flush_interval = 2  # seconds
+
+    async def enqueue(self, stream: str, data: Dict[str, Any]) -> None:
+        await self.batch_queue.put((stream, data))
+
+    async def run_batch_processor(self):
+        logging.info("RedisBatchWriter: Batch processor started.")
+        while True:
+            try:
+                items = []
+                try:
+                    # Wait for first item
+                    items.append(await asyncio.wait_for(self.batch_queue.get(), timeout=self.flush_interval))
+                except asyncio.TimeoutError:
+                    continue
+
+                # Drain the queue for the rest of the batch
+                while len(items) < self.batch_size:
+                    try:
+                        items.append(self.batch_queue.get_nowait())
+                    except asyncio.QueueEmpty:
+                        break
+
+                # Group by stream
+                streams: Dict[str, list] = {}
+                for stream, data in items:
+                    streams.setdefault(stream, []).append(data)
+
+                # Write each stream
+                for stream, records in streams.items():
+                    try:
+                        await self.redis.xadd(stream, {"data": json.dumps(records)}, maxlen=1000, approximate=True)
+                        logging.info(f"RedisBatchWriter: ✅ Wrote {len(records)} records to {stream}")
+                    except Exception as e:
+                        logging.error(f"RedisBatchWriter: ❌ Failed to write to {stream}: {e}")
+                        for record in records:
+                            await self.failure_queue.put((stream, record))
+
+            except Exception as e:
+                logging.exception(f"RedisBatchWriter: Unexpected error: {e}")
+
+    async def process_failure_queue(self):
+        logging.info("RedisBatchWriter: Failure queue processor started.")
+        while True:
+            try:
+                stream, record = await self.failure_queue.get()
+                try:
+                    await self.redis.xadd(stream, {"data": json.dumps([record])}, maxlen=1000, approximate=True)
+                    logging.info(f"RedisBatchWriter: ✅ Retried and wrote to {stream}")
+                except Exception as e:
+                    logging.warning(f"RedisBatchWriter: ⚠️ Retry failed for {stream}: {e}")
+                    await asyncio.sleep(5)  # back off before requeuing
+                    await self.failure_queue.put((stream, record))
+            except Exception as e:
+                logging.exception(f"RedisBatchWriter: Error in failure queue: {e}")
+C:\stocksblitz\shared_architecture\shared_architecture\utils\retry_helpers.py:
+
+import time
+import logging
+from functools import wraps
+
+def retry(exceptions, tries=3, delay=1, backoff=2):
+    def decorator_retry(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            _tries, _delay = tries, delay
+            while _tries > 1:
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    logging.warning(f"{e}, Retrying in {_delay} seconds...")
+                    time.sleep(_delay)
+                    _tries -= 1
+                    _delay *= backoff
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator_retry
 C:\stocksblitz\shared_architecture\shared_architecture\utils\service_helpers.py:
 
 import os
+import socket
 import logging
 from redis.asyncio import RedisCluster
-import socket
-from shared_architecture.connections.timescaledb import TimescaleDBConnection
-from shared_architecture.connections.rabbitmq import RabbitMQConnection
-from shared_architecture.connections.mongodb import MongoDBConnection
-from shared_architecture.connections.redis_connection import RedisConnectionFactory
-# Setup logging
-logging.basicConfig(
-    level=os.getenv("LOGGING_LEVEL", "INFO"),
-    format="%(asctime)s - %(levelname)s - %(message)s"
+from shared_architecture.config.config_loader import get_env, ENV
+from shared_architecture.connections import (
+    get_redis_connection,
+    get_timescaledb_session,
+    get_rabbitmq_connection,
+    get_mongo_connection,
+    close_all_connections,
 )
 
-class AsyncConnectionManager:
+
+logger = logging.getLogger(__name__)
+
+__all__ = [
+    "get_redis",
+    "get_timescaledb_session",
+    "get_mongo",
+    "get_rabbitmq_channel",
+    "initialize_service",
+    "RedisClient"
+]
+
+def initialize_service():
+    logger.info("Initializing service...")
+    logger.info(f"ENV: {get_env('ENV', 'dev')}")
+    logger.info(f"USE_MOCKS: {get_env('USE_MOCKS', False, cast_type=bool)}")
+    # Additional startup checks or health logging can go here
+
+# Optional advanced Redis client
+if ENV.use_mocks:
+    from shared_architecture.mocks.redis_mock import RedisMock
+
+class RedisClient:
     def __init__(self, config: dict):
         self.config = config
-        self._timescaledb_conn = None
-        self._redis_pool = None
-        self._rabbitmq_conn = None
-        self._mongodb_conn = None
+        self.client = None
 
-    async def initialize(self):
-        logging.info("Initializing connection pools and shared services...")
-        await self._initialize_timescaledb()
-        await self._initialize_redis()
-        self._initialize_rabbitmq()
-        await self._initialize_mongodb()
-        logging.info("All connections initialized.")
-    async def _initialize_redis(self):
-        try:
-            redis_factory = RedisConnectionFactory()
-            await redis_factory.connect()
-            self._redis_pool = await redis_factory.get_connection()
-            logger.info("Redis (standalone or cluster) initialized.")
-        except Exception as e:
-            logger.error(f"Failed to initialize Redis: {e}")
+    async def connect(self):
+        if ENV.use_mocks:
+            logger.warning("Using RedisMock (USE_MOCKS=true)")
+            self.client = RedisMock()
+            return
+
+        startup_nodes = self._discover_redis_cluster_nodes()
+        if not startup_nodes:
+            raise RuntimeError("No Redis cluster nodes found.")
+
+        self.client = RedisCluster(
+            startup_nodes=startup_nodes,
+            decode_responses=True,
+            max_connections=int(self.config.get("redis_max_connections", 10))
+        )
+        await self.client.ping()
+        logger.info("Connected to Redis Cluster successfully.")
+
     def _discover_redis_cluster_nodes(self):
-        service = self.config.get("redis_cluster_service", "redis-cluster")
-        namespace = self.config.get("redis_namespace", "default")
-        port = int(self.config.get("redis_port", 6379))
+        full_host = self.config.get("REDIS_HOST", "redis-cluster.stocksblitz.svc.cluster.local")
+        port = int(self.config.get("REDIS_PORT", 6379))
+
+        if ENV.use_mocks or not os.getenv("KUBERNETES_SERVICE_HOST"):
+            logger.warning("Local/dev environment detected – using fallback localhost Redis.")
+            return [{"host": "localhost", "port": port}]
+
         try:
-            hosts = socket.gethostbyname_ex(f"{service}.{namespace}.svc.cluster.local")[2]
+            hosts = socket.gethostbyname_ex(full_host)[2]
             return [{"host": ip, "port": port} for ip in hosts]
         except Exception as e:
-            logging.error(f"Failed to discover Redis Cluster nodes: {e}")
+            logger.error(f"Failed to discover Redis Cluster nodes: {e}")
             return []
 
-    async def _initialize_redis(self):
+    async def get_connection(self):
+        if not self.client:
+            raise RuntimeError("Redis client is not initialized. Call `connect()` first.")
+        return self.client
+
+    async def health_check(self):
         try:
-            startup_nodes = self._discover_redis_cluster_nodes()
-            if not startup_nodes:
-                raise RuntimeError("No Redis cluster nodes found.")
-
-            self._redis_pool = RedisCluster(
-                startup_nodes=startup_nodes,
-                decode_responses=True,
-                max_connections=int(self.config.get("redis_max_connections", 10)),
-            )
-            await self._redis_pool.ping()
-            logging.info("Connected to Redis Cluster successfully.")
+            if self.client and await self.client.ping():
+                return {"status": "ok", "message": "Redis reachable"}
         except Exception as e:
-            logging.error(f"Redis Cluster connection failed during initialization: {e}")
-            self._redis_pool = None
-
-    async def get_redis_connection(self):
-        if not self._redis_pool:
-            logging.error("Redis cluster connection is not initialized.")
-            return None
-        try:
-            if not await self._redis_pool.ping():
-                logging.error("Redis cluster is unreachable.")
-                return None
-            return self._redis_pool
-        except Exception as e:
-            logging.error(f"Redis cluster ping failed: {e}")
-            return None
-
-    async def _initialize_timescaledb(self):
-        """
-        Initialize TimescaleDB connection pool.
-        """
-        try:
-            self._timescaledb_conn = TimescaleDBConnection(config=self.config)
-            if not self._timescaledb_conn.is_connected():
-                logging.warning("TimescaleDB connection failed during initialization.")
-        except Exception as e:
-            logging.error(f"Error initializing TimescaleDB connection: {e}")
-
-
-
-    def _initialize_rabbitmq(self):
-        """
-        Initialize RabbitMQ connection.
-        """
-        try:
-            self._rabbitmq_conn = RabbitMQConnection(config=self.config)
-            self._rabbitmq_conn.connect()
-            if not self._rabbitmq_conn.is_connected():
-                logging.warning("RabbitMQ connection failed during initialization.")
-        except Exception as e:
-            logging.error(f"Error initializing RabbitMQ connection: {e}")
-
-    async def _initialize_mongodb(self):
-        """
-        Initialize MongoDB connection.
-        """
-        try:
-            self._mongodb_conn = MongoDBConnection(config=self.config)
-            if not self._mongodb_conn.is_connected():
-                logging.warning("MongoDB connection failed during initialization.")
-        except Exception as e:
-            logging.error(f"MongoDB connection error: {e}")
-
-
-
-    def get_timescaledb_session(self):
-        """
-        Provides a database session from the TimescaleDB pool.
-        """
-        if not self._timescaledb_conn or not self._timescaledb_conn.is_connected():
-            logging.error("TimescaleDB connection is unavailable.")
-            return None
-        return self._timescaledb_conn.get_session()
-
-    def get_rabbitmq_connection(self):
-        """
-        Provides the RabbitMQ connection.
-        """
-        if not self._rabbitmq_conn or not self._rabbitmq_conn.is_connected():
-            logging.error("RabbitMQ connection is unavailable.")
-            return None
-        return self._rabbitmq_conn.get_connection()
-
-    def get_mongodb_connection(self):
-        """
-        Provides the MongoDB connection.
-        """
-        if not self._mongodb_conn or not self._mongodb_conn.is_connected():
-            logging.error("MongoDB connection is unavailable.")
-            return None
-        return self._mongodb_conn.get_database()
-
-    async def close_connections(self):
-        """
-        Closes all connections gracefully.
-        """
-        try:
-            if self._redis_pool:
-                await self._redis_pool.close()
-                logging.info("Redis connection pool closed.")
-
-            logging.info("All connections closed successfully.")
-        except Exception as e:
-            logging.error(f"Error closing connections: {e}")
-
-
-# Singleton instance of ConnectionManager
-connection_manager = None
-
-
-async def initialize_service(service_name: str, config: dict):
-    """
-    Initializes the ConnectionManager for shared resources.
-
-    Args:
-        service_name (str): The name of the microservice.
-        config (dict): The configuration for the service.
-    """
-    global connection_manager
-    if connection_manager is None:
-        connection_manager = AsyncConnectionManager(config=config)
-        await connection_manager.initialize()
-        logging.info(f"Service '{service_name}' initialized.")
+            return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Redis not initialized or unreachable"}
 C:\stocksblitz\shared_architecture\shared_architecture\utils\__init__.py:
 
-# shared_architecture/utils/__init__.py
-from .logging_utils import logger
 
-__all__ = ["logger"]
+from .keycloak_helper import get_access_token, refresh_access_token
+from .logging_utils import configure_logging, log_info, log_error, log_warning, log_debug, log_exception
+from .rabbitmq_helper import publish_message
+from .retry_helpers import retry
+from .service_helpers import initialize_service
+from .other_helpers import validate_env_variable, safe_int_conversion, format_date, log_error as log_other_error
+
+__all__ = [
+    "get_access_token", "refresh_access_token",
+    "configure_logging", "log_info", "log_error", "log_warning", "log_debug", "log_exception",
+    "publish_message",
+    "retry",
+    "initialize_service",
+    "validate_env_variable", "safe_int_conversion", "format_date", "log_other_error"
+]
+C:\stocksblitz\shared_architecture\tests\test_bootstrap.py:
+
+# tests/test_bootstrap.py
+
+import os
+
+# Automatically set USE_MOCKS to true when running tests
+os.environ["USE_MOCKS"] = "true"
+C:\stocksblitz\shared_architecture\tests\test_mongo_mock.py:
+
+# tests/test_mongo_mock.py
+
+from shared_architecture.utils import connection_manager
+
+def test_mongo_find_one_positive():
+    mongo = connection_manager.get_mongo()
+    mongo.test_db.test_collection.find_one.return_value = {"user_id": 1}
+    
+    result = mongo.test_db.test_collection.find_one({"user_id": 1})
+    assert result["user_id"] == 1
+
+def test_mongo_find_one_not_found():
+    mongo = connection_manager.get_mongo()
+    mongo.test_db.test_collection.find_one.return_value = None
+    
+    result = mongo.test_db.test_collection.find_one({"user_id": 999})
+    assert result is None
+C:\stocksblitz\shared_architecture\tests\test_rabbitmq_mock.py:
+
+# tests/test_rabbitmq_mock.py
+
+from shared_architecture.utils import connection_manager
+
+def test_publish_message_to_queue():
+    rabbit = connection_manager.get_rabbitmq_channel()
+    rabbit.basic_publish(exchange='', routing_key='orders_queue', body='{"order_id": 123}')
+    
+    assert rabbit.published_messages[-1]["queue"] == "orders_queue"
+    assert rabbit.published_messages[-1]["body"] == '{"order_id": 123}'
+C:\stocksblitz\shared_architecture\tests\test_redis_mock.py:
+
+# tests/test_redis_mock.py
+
+import pytest
+import asyncio
+from shared_architecture.utils import connection_manager
+
+@pytest.mark.asyncio
+async def test_redis_tick_data_store_and_retrieve():
+    redis = connection_manager.get_redis()
+    await redis.hset("tick:NSE:NIFTY", "price", "22000")
+    value = await redis.hget("tick:NSE:NIFTY", "price")
+    assert value == "22000"
+
+@pytest.mark.asyncio
+async def test_redis_tick_data_not_found():
+    redis = connection_manager.get_redis()
+    value = await redis.hget("tick:NSE:INVALID", "price")
+    assert value is None
+C:\stocksblitz\shared_architecture\tests\test_timescaledb_mock.py:
+
+# tests/test_timescaledb_mock.py
+
+from shared_architecture.utils import connection_manager
+from shared_architecture.models.symbol import Symbol
+
+def test_symbol_query_positive():
+    session = connection_manager.get_timescaledb_session()
+    mock_symbol = Symbol(id=1, name="NIFTY", exchange="NSE", instrument_type="EQ")
+    session.query.return_value.filter_by.return_value.all.return_value = [mock_symbol]
+
+    results = session.query(Symbol).filter_by(exchange="NSE").all()
+    assert len(results) == 1
+    assert results[0].name == "NIFTY"
+
+def test_symbol_query_negative():
+    session = connection_manager.get_timescaledb_session()
+    session.query.return_value.filter_by.return_value.all.return_value = []
+
+    results = session.query(Symbol).filter_by(exchange="BSE").all()
+    assert results == []

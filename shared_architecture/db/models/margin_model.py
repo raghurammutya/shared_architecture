@@ -1,7 +1,7 @@
 # trade_service/app/models/margin_model.py
 from sqlalchemy import UniqueConstraint, Column, Integer, Float, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
 Base = declarative_base()
 
 class MarginModel(Base):
@@ -26,6 +26,6 @@ class MarginModel(Base):
     unrealised_mtm = Column(Float)
     utilized = Column(Float)
     active = Column(Boolean, default=True)
-    margin_date = Column(DateTime)
+    margin_date = Column(TimezoneAwareDateTime())
     instrument_key = Column(String, ForeignKey('symbols.instrument_key'))
     __table_args__ = (UniqueConstraint('pseudo_account', 'category', 'margin_date'),)

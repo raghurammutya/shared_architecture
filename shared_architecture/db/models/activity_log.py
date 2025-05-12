@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, Text
 from shared_architecture.db.base import Base
+from shared_architecture.utils.datetime_utils import utc_now 
 import datetime
 
 class ActivityLog(Base):
@@ -9,4 +10,4 @@ class ActivityLog(Base):
     user_id = Column(String, nullable=False)
     activity_type = Column(String, nullable=False)
     details = Column(Text)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    timestamp = Column(DateTime, default=utc_now())

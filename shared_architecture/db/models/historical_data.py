@@ -1,12 +1,12 @@
 from sqlalchemy import Column, TIMESTAMP, Text, Double, BigInteger, Date
 from sqlalchemy.ext.declarative import declarative_base
-
+from shared_architecture.utils.custom_types import TimezoneAwareDateTime
 Base = declarative_base()
 
 class HistoricalData(Base):
     __tablename__ = 'historical_data'
 
-    time = Column(TIMESTAMP(timezone=True), primary_key=True, nullable=False)
+    time = Column(TimezoneAwareDateTime(), primary_key=True, nullable=False)
     instrument_key = Column(Text, primary_key=True, nullable=False)
     interval = Column(Text, primary_key=True, nullable=False)
 
@@ -16,7 +16,7 @@ class HistoricalData(Base):
     close = Column(Double)
     volume = Column(BigInteger)
     oi = Column(BigInteger)
-    expirydate = Column(Date)
+    expirydate = Column(TimezoneAwareDateTime())
     option_type = Column(Text)
     strikeprice = Column(Double)
     

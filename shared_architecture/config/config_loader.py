@@ -1,5 +1,3 @@
-# shared_architecture/config/config_loader.py
-
 import os
 
 def get_env(key: str, default=None, cast_type=str):
@@ -12,3 +10,11 @@ def get_env(key: str, default=None, cast_type=str):
         return cast_type(value)
     except Exception as e:
         raise ValueError(f"Environment variable '{key}' must be castable to {cast_type}: {e}")
+
+class Environment:
+    def __init__(self):
+        self.use_mocks = get_env("USE_MOCKS", "false", bool)
+        self.env = get_env("ENV", "dev")
+        self.service_name = get_env("SERVICE_NAME", "microservice")
+
+ENV = Environment()

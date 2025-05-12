@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import logging.config
 from pathlib import Path
 
@@ -46,7 +47,25 @@ def configure_logging(service_name: str = "microservice", log_level: str = "INFO
     )
     logging.info(f"Logging configured for {service_name} at level {log_level}")
 
+def init_logging(service_name: str = "shared_service"):
+    """
+    Initializes a global logger with consistent formatting and level control.
+    Logs to stdout by default.
 
+    Example:
+        from shared_architecture.utils.logging_utils import init_logging
+        init_logging("ticker_service")
+    """
+    logging_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    log_format = f"%(asctime)s - {service_name} - %(levelname)s - %(message)s"
+
+    logging.basicConfig(
+        level=logging_level,
+        format=log_format,
+        handlers=[logging.StreamHandler(sys.stdout)]
+    )
+
+    logging.info(f"✅ Logging initialized for {service_name} at level {logging_level}")
 if __name__ == "__main__":
     configure_logging("test_service", "DEBUG")
     logging.debug("This is a debug message.")
