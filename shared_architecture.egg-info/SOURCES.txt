@@ -67,8 +67,3 @@ shared_architecture/utils/redis_batch_reader.py
 shared_architecture/utils/redis_batch_writer.py
 shared_architecture/utils/retry_helpers.py
 shared_architecture/utils/service_helpers.py
-tests/test_bootstrap.py
-tests/test_mongo_mock.py
-tests/test_rabbitmq_mock.py
-tests/test_redis_mock.py
-tests/test_timescaledb_mock.py

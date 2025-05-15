@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="shared-architecture",  # Your published PyPI package name
-    version="0.4.1",  # 🚀 New version
+    version="0.4.2",  # 🚀 New version
     description="A shared Python library for backend microservices, including models, utilities, and configurations.",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
