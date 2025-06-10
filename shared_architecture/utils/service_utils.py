@@ -30,6 +30,15 @@ async def close_all_connections(connections: dict) -> None:
 
 
 def start_service(service_name: str) -> FastAPI:
+    """
+    Complete service initialization that handles everything in one shot:
+    1. FastAPI app creation
+    2. Configuration loading  
+    3. Logging setup
+    4. Metrics setup
+    5. Connection initialization
+    6. App state setup with connections and config
+    """
     from fastapi import FastAPI
     from shared_architecture.config import config_loader
     from shared_architecture.utils.logging_utils import configure_logging
@@ -37,21 +46,55 @@ def start_service(service_name: str) -> FastAPI:
     from shared_architecture.connections.connection_manager import connection_manager
 
     app = FastAPI(title=service_name)
+    
+    # Load configuration
     config_loader.load(service_name)
+    
+    # Setup logging
     configure_logging(service_name)
+    
+    # Setup metrics
     setup_metrics(app)
-    # Await connection initialization
+    
+    # Register the startup event that initializes everything
     async def startup_event():
-        await connection_manager.initialize()
+        log_info(f"🚀 Initializing all infrastructure for {service_name}...")
+        try:
+            # Initialize connection manager
+            await connection_manager.initialize()
+            
+            # Verify connections are working
+            if connection_manager.timescaledb:
+                # Test the connection with proper SQLAlchemy text
+                from sqlalchemy import text
+                async with connection_manager.timescaledb() as test_session:
+                    await test_session.execute(text("SELECT 1"))
+                log_info("TimescaleDB connection verified")
+            
+            # Set up app.state.connections with initialized connections
+            app.state.connections = {
+                "redis": connection_manager.redis,
+                "mongodb": connection_manager.mongodb,
+                "timescaledb": connection_manager.timescaledb,
+                "rabbitmq": connection_manager.rabbitmq,
+            }
+            
+            log_info(f"✅ Infrastructure initialization complete for {service_name}")
+            
+        except Exception as e:
+            log_info(f"❌ Infrastructure initialization failed for {service_name}: {e}")
+            raise
 
+    # Register startup event with higher priority (runs first)
     app.add_event_handler("startup", startup_event)
-
-    app.state.connections = {
-        "redis": connection_manager.redis,
-        "mongodb": connection_manager.mongodb,
-        "timescaledb": connection_manager.timescaledb,
-        "rabbitmq": connection_manager.rabbitmq,
+    
+    # Set up app.state.config immediately (this doesn't need async)
+    app.state.config = {
+        "common": config_loader.common_config,
+        "private": config_loader.private_config,
     }
+    
+    log_info(f"🎯 Service '{service_name}' created and configured")
     return app
 
 

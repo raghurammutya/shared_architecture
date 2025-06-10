@@ -38,7 +38,7 @@ class OrderModel(Base):
     trading_account = Column(String)
     trigger_price = Column(Float, nullable=True)
     validity = Column(String)
-    variety = Column(String)
+    variety = Column(String, nullable=False)
     timestamp = Column(DateTime(timezone=True), default=datetime.utcnow)
     instrument_key = Column(String, ForeignKey('symbols.instrument_key'))
     strategy_id = Column(String)

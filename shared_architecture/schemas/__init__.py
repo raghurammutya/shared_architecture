@@ -6,6 +6,12 @@ from .historical_data import HistoricalDataRequest, HistoricalDataCreate, Histor
 from .feed import FeedBase, FeedCreate, Feed
 from .symbol import SymbolCreate,SymbolUpdate,Symbol
 from .subscription import SubscriptionCreate,SubscriptionUpdate,Subscription
+# trade_service/app/schemas/__init__.py
+from .margin_schema import MarginSchema
+from .position_schema import PositionSchema
+from .holding_schema import HoldingSchema
+from .order_schema import OrderSchema
+from .trade_schemas import TradeOrder, TradeStatus
 # Expose imports for convenience
 __all__ = [
     "UserCreateSchema",
@@ -30,4 +36,9 @@ __all__ = [
     "Symbol",
     "Subscription",
     "Symbol",
+    "HoldingSchema",
+    "MarginSchema",
+    "OrderEventSchema",
+    "OrderSchema",
+    "PositionSchema",
 ]
