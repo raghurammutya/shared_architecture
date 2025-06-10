@@ -5,7 +5,7 @@ class UserCreateSchema(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=50)
     last_name: str = Field(..., min_length=1, max_length=50)
     email: EmailStr
-    phone_number: str = Field(..., pattern=r"^\+\d{10,15}$")  # Validates phone numbers
+    phone_number: str = Field(..., regex=r"^\+\d{10,15}$")  # Validates phone numbers
     role: UserRole = UserRole.USER  # Default role
 
 
@@ -23,4 +23,4 @@ class UserResponseSchema(BaseModel):
     role: UserRole
 
     class Config:
-        from_attributes = True
+        orm_mode = True

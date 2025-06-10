@@ -51,5 +51,5 @@ class BaseSchema(BaseModel):
     """Base schema for all Pydantic models with ORM + enum support."""
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         use_enum_values = True

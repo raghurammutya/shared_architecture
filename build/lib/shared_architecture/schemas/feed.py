@@ -20,4 +20,4 @@ class Feed(FeedBase):
     time: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
