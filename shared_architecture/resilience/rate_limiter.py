@@ -10,7 +10,7 @@ import redis
 import json
 import hashlib
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List, Tuple, Union
+from typing import Dict, Any, Optional, List, Tuple, Union, Callable
 from dataclasses import dataclass, asdict
 from enum import Enum
 from abc import ABC, abstractmethod

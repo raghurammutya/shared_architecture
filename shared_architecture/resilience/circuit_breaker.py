@@ -296,7 +296,7 @@ class CircuitBreaker(Generic[T]):
             self._record_failure(e)
             raise
     
-    async def call_async(self, func: Callable[[], Union[T, asyncio.Coroutine[Any, Any, T]]], *args, **kwargs) -> T:
+    async def call_async(self, func: Callable[[], Union[T, Any]], *args, **kwargs) -> T:
         """
         Execute an async function with circuit breaker protection.
         

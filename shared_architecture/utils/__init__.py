@@ -14,6 +14,17 @@ from .rabbitmq_helper import publish_message
 from .redis_mongodb_transfer import redis_to_mongodb,mongodb_to_redis
 from .redis_timescaledb_transfer import redis_to_timescaledb,timescaledb_to_redis
 from .safe_converters import safe_convert,safe_convert_bool, safe_convert_int, safe_convert_float, safe_parse_datetime
+from .celery_helpers import (
+    CeleryDatabaseHelper,
+    CeleryTaskMixin,
+    celery_db_helper,
+    get_celery_db_session,
+    celery_db_session,
+    execute_with_db,
+    with_db_session,
+    with_error_handling,
+    with_retry
+)
 
 __all__ = [
     'start_service',
@@ -55,5 +66,14 @@ __all__ = [
     "safe_convert_bool",
     "safe_convert_int",
     "safe_convert_float",
-    "safe_parse_datetime"
+    "safe_parse_datetime",
+    "CeleryDatabaseHelper",
+    "CeleryTaskMixin",
+    "celery_db_helper",
+    "get_celery_db_session",
+    "celery_db_session",
+    "execute_with_db",
+    "with_db_session",
+    "with_error_handling",
+    "with_retry"
 ]

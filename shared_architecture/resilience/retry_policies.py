@@ -231,7 +231,7 @@ class RetryPolicy(Generic[T]):
             attempts[-1].exception if attempts else Exception("Unknown error")
         )
     
-    async def execute_async(self, func: Callable[[], Union[T, asyncio.Coroutine[Any, Any, T]]], *args, **kwargs) -> T:
+    async def execute_async(self, func: Callable[[], Union[T, Any]], *args, **kwargs) -> T:
         """
         Execute an async function with retry logic.
         
