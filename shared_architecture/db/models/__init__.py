@@ -16,6 +16,7 @@ from shared_architecture.db.models.margin_model import MarginModel
 from shared_architecture.db.models.trading_account import TradingAccount
 from shared_architecture.db.models.order_event_model import OrderEventModel
 from shared_architecture.db.models.ledger_entry_model import LedgerEntryModel
+from shared_architecture.db.models.strategy_model import StrategyModel
 
 __all__ = [
     "OrderModel",
@@ -30,5 +31,6 @@ __all__ = [
     "TickData",
     "SymbolUpdateStatus",
     "OrderEventModel",
-    "LedgerEntryModel"
+    "LedgerEntryModel",
+    "StrategyModel"
 ]

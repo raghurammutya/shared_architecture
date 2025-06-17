@@ -9,15 +9,31 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger(__name__)
 
 class RedisDataManager:
-    """Manages storage and retrieval of trading data in Redis with strategy support"""
+    """Manages storage and retrieval of trading data in Redis with strategy support and cluster compatibility"""
     
     def __init__(self, redis_client: Optional[Any] = None):
         self.redis = redis_client
         self._enabled = redis_client is not None
         self.ttl = 86400  # 24 hours default TTL
+        self._is_cluster = self._detect_cluster_mode()
         
         if not self._enabled:
             logger.warning("RedisDataManager initialized without Redis - caching disabled")
+        elif self._is_cluster:
+            logger.info("RedisDataManager initialized with Redis cluster support")
+        else:
+            logger.info("RedisDataManager initialized with single Redis instance")
+    
+    def _detect_cluster_mode(self) -> bool:
+        """Detect if Redis client is in cluster mode"""
+        if not self.redis:
+            return False
+        
+        try:
+            # Check if it's a RedisCluster instance
+            return hasattr(self.redis, 'startup_nodes') or 'RedisCluster' in str(type(self.redis))
+        except Exception:
+            return False
     
     # Key generation methods
     def _get_org_key(self, organization_id: str) -> str:
@@ -40,8 +56,8 @@ class RedisDataManager:
             return f"{self._get_account_key(organization_id, pseudo_account)}:{data_type}"
     
     # Storage methods
-    async def store_positions(self, organization_id: str, pseudo_account: str, positions: List[Dict], strategy_id: Optional[str] = None) -> bool:
-        """Store positions data in Redis"""
+    def store_positions(self, organization_id: str, pseudo_account: str, positions: List, strategy_id: Optional[str] = None) -> bool:
+        """Store positions data in Redis (cluster-compatible)"""
         if not self._enabled or not self.redis:
             return False
         
@@ -56,8 +72,8 @@ class RedisDataManager:
                 pos_dict = self._serialize_datetime_fields(pos_dict)
                 positions_data.append(pos_dict)
             
-            # Store as JSON string
-            await self.redis.setex(
+            # Store as JSON string (sync operation, works with both single Redis and cluster)
+            self.redis.setex(
                 key, 
                 self.ttl, 
                 json.dumps(positions_data)
@@ -69,7 +85,7 @@ class RedisDataManager:
                     instrument_key = pos.get('instrument_key')
                     if instrument_key:
                         inst_key = f"{key}:by_instrument:{instrument_key}"
-                        await self.redis.setex(inst_key, self.ttl, json.dumps(pos))
+                        self.redis.setex(inst_key, self.ttl, json.dumps(pos))
             
             logger.info(f"Stored {len(positions)} positions for {pseudo_account} (strategy: {strategy_id})")
             return True
@@ -78,8 +94,8 @@ class RedisDataManager:
             logger.error(f"Failed to store positions: {e}")
             return False
     
-    async def store_holdings(self, organization_id: str, pseudo_account: str, holdings: List[Dict], strategy_id: Optional[str] = None) -> bool:
-        """Store holdings data in Redis"""
+    def store_holdings(self, organization_id: str, pseudo_account: str, holdings: List, strategy_id: Optional[str] = None) -> bool:
+        """Store holdings data in Redis (cluster-compatible)"""
         if not self._enabled or not self.redis:
             return False
         
@@ -92,7 +108,7 @@ class RedisDataManager:
                 holding_dict = self._serialize_datetime_fields(holding_dict)
                 holdings_data.append(holding_dict)
             
-            await self.redis.setex(key, self.ttl, json.dumps(holdings_data))
+            self.redis.setex(key, self.ttl, json.dumps(holdings_data))
             
             # Store instrument-wise
             if strategy_id:
@@ -100,7 +116,7 @@ class RedisDataManager:
                     instrument_key = holding.get('instrument_key')
                     if instrument_key:
                         inst_key = f"{key}:by_instrument:{instrument_key}"
-                        await self.redis.setex(inst_key, self.ttl, json.dumps(holding))
+                        self.redis.setex(inst_key, self.ttl, json.dumps(holding))
             
             logger.info(f"Stored {len(holdings)} holdings for {pseudo_account} (strategy: {strategy_id})")
             return True
@@ -109,8 +125,8 @@ class RedisDataManager:
             logger.error(f"Failed to store holdings: {e}")
             return False
     
-    async def store_orders(self, organization_id: str, pseudo_account: str, orders: List[Dict], strategy_id: Optional[str] = None) -> bool:
-        """Store orders data in Redis"""
+    def store_orders(self, organization_id: str, pseudo_account: str, orders: List, strategy_id: Optional[str] = None) -> bool:
+        """Store orders data in Redis (cluster-compatible)"""
         if not self._enabled or not self.redis:
             return False
         
@@ -123,7 +139,7 @@ class RedisDataManager:
                 order_dict = self._serialize_datetime_fields(order_dict)
                 orders_data.append(order_dict)
             
-            await self.redis.setex(key, self.ttl, json.dumps(orders_data))
+            self.redis.setex(key, self.ttl, json.dumps(orders_data))
             
             # Store by status for quick filtering
             status_groups = {}
@@ -135,7 +151,7 @@ class RedisDataManager:
             
             for status, status_orders in status_groups.items():
                 status_key = f"{key}:by_status:{status}"
-                await self.redis.setex(status_key, self.ttl, json.dumps(status_orders))
+                self.redis.setex(status_key, self.ttl, json.dumps(status_orders))
             
             logger.info(f"Stored {len(orders)} orders for {pseudo_account} (strategy: {strategy_id})")
             return True
@@ -144,8 +160,8 @@ class RedisDataManager:
             logger.error(f"Failed to store orders: {e}")
             return False
     
-    async def store_margins(self, organization_id: str, pseudo_account: str, margins: List[Dict], strategy_id: Optional[str] = None) -> bool:
-        """Store margins data in Redis"""
+    def store_margins(self, organization_id: str, pseudo_account: str, margins: List, strategy_id: Optional[str] = None) -> bool:
+        """Store margins data in Redis (cluster-compatible)"""
         if not self._enabled or not self.redis:
             return False
         
@@ -158,7 +174,7 @@ class RedisDataManager:
                 margin_dict = self._serialize_datetime_fields(margin_dict)
                 margins_data.append(margin_dict)
             
-            await self.redis.setex(key, self.ttl, json.dumps(margins_data))
+            self.redis.setex(key, self.ttl, json.dumps(margins_data))
             
             logger.info(f"Stored {len(margins)} margins for {pseudo_account} (strategy: {strategy_id})")
             return True

@@ -14,3 +14,15 @@ class ServiceUnavailableError(Exception):
             message = f"Service '{service_name}' unavailable"
         self.message = message
         super().__init__(self.message)
+
+class ValidationError(Exception):
+    """Exception raised for validation failures"""
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
+
+class BusinessLogicError(Exception):
+    """Exception raised for business logic violations"""
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)

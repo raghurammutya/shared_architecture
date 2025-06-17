@@ -168,3 +168,22 @@ class ExchangeSegment(str, Enum):
     FO = "FO"
     COMMODITY = "COMMODITY"
     CURRENCY = "CURRENCY"
+
+class StrategyStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    PAUSED = "PAUSED"
+    COMPLETED = "COMPLETED"
+    SQUARED_OFF = "SQUARED_OFF"
+    DISABLED = "DISABLED"
+
+class StrategyType(str, Enum):
+    MANUAL = "MANUAL"
+    ALGORITHMIC = "ALGORITHMIC"
+    COPY_TRADING = "COPY_TRADING"
+    BASKET = "BASKET"
+    ARBITRAGE = "ARBITRAGE"
+    HEDGE = "HEDGE"
+    SCALPING = "SCALPING"
+    SWING = "SWING"
+    OPTIONS = "OPTIONS"
+    FUTURES = "FUTURES"
