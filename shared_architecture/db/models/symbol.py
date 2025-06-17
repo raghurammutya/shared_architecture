@@ -3,8 +3,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 from shared_architecture.utils.time_utils import TimezoneAwareDateTime
-
-Base = declarative_base()
+from shared_architecture.db.base import Base
 
 class Symbol(Base):
     __tablename__ = "symbols"
@@ -118,6 +117,6 @@ class Symbol(Base):
     susp_status = Column(String, name='suspstatus')
     suspension_reason = Column(String, name='suspensionreason')
     suspension_date = Column(Date, name='suspensiondate')
-    weeks_52_high = Column(Numeric, name=text('52WeeksHigh'))
-    weeks_52_low = Column(Numeric, name=text('52WeeksLow'))
+    weeks_52_high = Column(Numeric, name=text('52WeeksHigh')) # type: ignore
+    weeks_52_low = Column(Numeric, name=text('52WeeksLow')) # type: ignore
     short_name = Column(String, name='shortname')

@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, Column,Boolean, Integer, Float,String, Date, DateTime, ForeignKey, UniqueConstraint, Text
 from sqlalchemy.ext.declarative import declarative_base
 import datetime 
-Base = declarative_base()
+from shared_architecture.db.base import Base
 
 class Broker(Base):
     __tablename__ = 'brokers'

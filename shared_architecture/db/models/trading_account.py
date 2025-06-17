@@ -3,14 +3,14 @@ from sqlalchemy.orm import relationship
 from shared_architecture.db.base import Base
 
 class TradingAccount(Base):
-    __tablename__ = "trading_accounts"
-
+    __tablename__ = "trading_accounts" # type: ignore
+    __table_args__ = {'schema': 'tradingdb'}
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("tradingdb.users.id"), nullable=False, index=True)
     broker_name = Column(String, nullable=False)
     api_key = Column(String, nullable=False)
     api_secret = Column(String, nullable=False)
     access_token = Column(String, nullable=True)
     account_alias = Column(String, nullable=True)
 
-    user = relationship("User", back_populates="trading_accounts")
+    user = relationship("User", back_populates="trading_accounts", foreign_keys=[user_id])

@@ -42,8 +42,8 @@ def get_db() -> Any:
         logger.info("Closing database session")  # Debugging log
         db.close()
 
-DB_URL_ASYNC = config_loader.get("TIMESCALEDB_URL_ASYNC", "postgresql+asyncpg://postgres:postgres@localhost:5432/stocksblitz")
-DB_URL_SYNC = config_loader.get("TIMESCALEDB_URL", "postgresql://postgres:postgres@localhost:5432/stocksblitz")
+DB_URL_ASYNC = config_loader.get("TIMESCALEDB_URL_ASYNC", "postgresql+asyncpg://tradmin:tradpass@localhost:5432/tradingdb")
+DB_URL_SYNC = config_loader.get("TIMESCALEDB_URL", "postgresql://tradmin:tradpass@localhost:5432/tradingdb")
 
 # === Async Engine (used for FastAPI + async ORM operations) ===
 async_engine = create_async_engine(

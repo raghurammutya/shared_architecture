@@ -14,7 +14,8 @@ from shared_architecture.db.models.position_model import PositionModel
 from shared_architecture.db.models.holding_model import HoldingModel
 from shared_architecture.db.models.margin_model import MarginModel
 from shared_architecture.db.models.trading_account import TradingAccount
-from shared_architecture.db.models.order_event_model import OrderEvent,OrderEventModel
+from shared_architecture.db.models.order_event_model import OrderEventModel
+from shared_architecture.db.models.ledger_entry_model import LedgerEntryModel
 
 __all__ = [
     "OrderModel",
@@ -28,6 +29,6 @@ __all__ = [
     "HistoricalData",
     "TickData",
     "SymbolUpdateStatus",
-    "OrderEvent",
-    "OrderEventModel"
+    "OrderEventModel",
+    "LedgerEntryModel"
 ]

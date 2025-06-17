@@ -1,10 +1,10 @@
 from sqlalchemy import Column, TIMESTAMP, Text, Double, BigInteger, Date,DateTime
 from sqlalchemy.ext.declarative import declarative_base
-Base = declarative_base()
+from shared_architecture.db.base import Base
 
 class TickData(Base):
     __tablename__ = 'tick_data'
-
+    __table_args__ = {'schema': 'tradingdb'}
     time = Column(TIMESTAMP(timezone=True), primary_key=True, nullable=False)
     instrument_key = Column(Text, primary_key=True, nullable=False)
     interval = Column(Text, primary_key=True, nullable=False)
