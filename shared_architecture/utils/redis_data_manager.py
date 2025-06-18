@@ -11,8 +11,9 @@ logger = logging.getLogger(__name__)
 class RedisDataManager:
     """Manages storage and retrieval of trading data in Redis with strategy support and cluster compatibility"""
     
-    def __init__(self, redis_client: Optional[Any] = None):
+    def __init__(self, redis_client: Optional[Any] = None, db_session: Optional[Session] = None):
         self.redis = redis_client
+        self.db = db_session
         self._enabled = redis_client is not None
         self.ttl = 86400  # 24 hours default TTL
         self._is_cluster = self._detect_cluster_mode()
@@ -185,9 +186,9 @@ class RedisDataManager:
     
     # Retrieval methods
     async def get_positions(self, organization_id: str, pseudo_account: str, strategy_id: Optional[str] = None) -> List[Dict]:
-        """Get positions from Redis"""
+        """Get positions from Redis with database fallback"""
         if not self._enabled or not self.redis:
-            return []
+            return await self._get_positions_from_db(pseudo_account, strategy_id)
         
         try:
             key = self._get_data_key(organization_id, pseudo_account, "positions", strategy_id)
@@ -195,16 +196,25 @@ class RedisDataManager:
             
             if data:
                 return json.loads(data)
-            return []
+            
+            # Fallback to database if Redis is empty
+            logger.info(f"Redis cache miss for positions, falling back to database for {pseudo_account}")
+            db_data = await self._get_positions_from_db(pseudo_account, strategy_id)
+            
+            # Store in Redis for next time
+            if db_data:
+                self.store_positions(organization_id, pseudo_account, db_data, strategy_id)
+            
+            return db_data
             
         except Exception as e:
-            logger.error(f"Failed to get positions: {e}")
-            return []
+            logger.error(f"Failed to get positions from Redis: {e}, falling back to database")
+            return await self._get_positions_from_db(pseudo_account, strategy_id)
     
     async def get_holdings(self, organization_id: str, pseudo_account: str, strategy_id: Optional[str] = None) -> List[Dict]:
-        """Get holdings from Redis"""
+        """Get holdings from Redis with database fallback"""
         if not self._enabled or not self.redis:
-            return []
+            return await self._get_holdings_from_db(pseudo_account, strategy_id)
         
         try:
             key = self._get_data_key(organization_id, pseudo_account, "holdings", strategy_id)
@@ -212,16 +222,25 @@ class RedisDataManager:
             
             if data:
                 return json.loads(data)
-            return []
+            
+            # Fallback to database if Redis is empty
+            logger.info(f"Redis cache miss for holdings, falling back to database for {pseudo_account}")
+            db_data = await self._get_holdings_from_db(pseudo_account, strategy_id)
+            
+            # Store in Redis for next time
+            if db_data:
+                self.store_holdings(organization_id, pseudo_account, db_data, strategy_id)
+            
+            return db_data
             
         except Exception as e:
-            logger.error(f"Failed to get holdings: {e}")
-            return []
+            logger.error(f"Failed to get holdings from Redis: {e}, falling back to database")
+            return await self._get_holdings_from_db(pseudo_account, strategy_id)
     
     async def get_orders(self, organization_id: str, pseudo_account: str, strategy_id: Optional[str] = None, status: Optional[str] = None) -> List[Dict]:
-        """Get orders from Redis, optionally filtered by status"""
+        """Get orders from Redis with database fallback, optionally filtered by status"""
         if not self._enabled or not self.redis:
-            return []
+            return await self._get_orders_from_db(pseudo_account, strategy_id, status)
         
         try:
             if status:
@@ -233,16 +252,25 @@ class RedisDataManager:
             
             if data:
                 return json.loads(data)
-            return []
+            
+            # Fallback to database if Redis is empty
+            logger.info(f"Redis cache miss for orders, falling back to database for {pseudo_account}")
+            db_data = await self._get_orders_from_db(pseudo_account, strategy_id, status)
+            
+            # Store in Redis for next time (without status filter for general caching)
+            if db_data and not status:
+                self.store_orders(organization_id, pseudo_account, db_data, strategy_id)
+            
+            return db_data
             
         except Exception as e:
-            logger.error(f"Failed to get orders: {e}")
-            return []
+            logger.error(f"Failed to get orders from Redis: {e}, falling back to database")
+            return await self._get_orders_from_db(pseudo_account, strategy_id, status)
     
     async def get_margins(self, organization_id: str, pseudo_account: str, strategy_id: Optional[str] = None) -> List[Dict]:
-        """Get margins from Redis"""
+        """Get margins from Redis with database fallback"""
         if not self._enabled or not self.redis:
-            return []
+            return await self._get_margins_from_db(pseudo_account, strategy_id)
         
         try:
             key = self._get_data_key(organization_id, pseudo_account, "margins", strategy_id)
@@ -250,11 +278,20 @@ class RedisDataManager:
             
             if data:
                 return json.loads(data)
-            return []
+            
+            # Fallback to database if Redis is empty
+            logger.info(f"Redis cache miss for margins, falling back to database for {pseudo_account}")
+            db_data = await self._get_margins_from_db(pseudo_account, strategy_id)
+            
+            # Store in Redis for next time
+            if db_data:
+                self.store_margins(organization_id, pseudo_account, db_data, strategy_id)
+            
+            return db_data
             
         except Exception as e:
-            logger.error(f"Failed to get margins: {e}")
-            return []
+            logger.error(f"Failed to get margins from Redis: {e}, falling back to database")
+            return await self._get_margins_from_db(pseudo_account, strategy_id)
     
     # Strategy management
     async def get_all_strategies(self, organization_id: str, pseudo_account: str) -> List[str]:
@@ -402,3 +439,74 @@ class RedisDataManager:
         except Exception as e:
             logger.error(f"Failed to invalidate strategy data: {e}")
             return False
+    
+    # Database fallback methods
+    async def _get_positions_from_db(self, pseudo_account: str, strategy_id: Optional[str] = None) -> List[Dict]:
+        """Get positions from database"""
+        if not self.db:
+            return []
+        
+        try:
+            from shared_architecture.db.models.position_model import PositionModel
+            query = self.db.query(PositionModel).filter_by(pseudo_account=pseudo_account)
+            if strategy_id:
+                query = query.filter_by(strategy_id=strategy_id)
+            
+            positions = query.all()
+            return [self._model_to_dict(pos) for pos in positions]
+        except Exception as e:
+            logger.error(f"Failed to get positions from database: {e}")
+            return []
+    
+    async def _get_holdings_from_db(self, pseudo_account: str, strategy_id: Optional[str] = None) -> List[Dict]:
+        """Get holdings from database"""
+        if not self.db:
+            return []
+        
+        try:
+            from shared_architecture.db.models.holding_model import HoldingModel
+            query = self.db.query(HoldingModel).filter_by(pseudo_account=pseudo_account)
+            if strategy_id:
+                query = query.filter_by(strategy_id=strategy_id)
+            
+            holdings = query.all()
+            return [self._model_to_dict(holding) for holding in holdings]
+        except Exception as e:
+            logger.error(f"Failed to get holdings from database: {e}")
+            return []
+    
+    async def _get_orders_from_db(self, pseudo_account: str, strategy_id: Optional[str] = None, status: Optional[str] = None) -> List[Dict]:
+        """Get orders from database"""
+        if not self.db:
+            return []
+        
+        try:
+            from shared_architecture.db.models.order_model import OrderModel
+            query = self.db.query(OrderModel).filter_by(pseudo_account=pseudo_account)
+            if strategy_id:
+                query = query.filter_by(strategy_id=strategy_id)
+            if status:
+                query = query.filter_by(status=status)
+            
+            orders = query.all()
+            return [self._model_to_dict(order) for order in orders]
+        except Exception as e:
+            logger.error(f"Failed to get orders from database: {e}")
+            return []
+    
+    async def _get_margins_from_db(self, pseudo_account: str, strategy_id: Optional[str] = None) -> List[Dict]:
+        """Get margins from database"""
+        if not self.db:
+            return []
+        
+        try:
+            from shared_architecture.db.models.margin_model import MarginModel
+            query = self.db.query(MarginModel).filter_by(pseudo_account=pseudo_account)
+            if strategy_id:
+                query = query.filter_by(strategy_id=strategy_id)
+            
+            margins = query.all()
+            return [self._model_to_dict(margin) for margin in margins]
+        except Exception as e:
+            logger.error(f"Failed to get margins from database: {e}")
+            return []

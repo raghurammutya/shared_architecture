@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 # Dynamically construct the database URL from environment variables
 def get_database_url() -> str:
     try:
-        db_user = os.getenv("POSTGRES_USER", "traduser")
-        db_password = os.getenv("POSTGRES_PASSWORD", "tradpass")
-        db_host = os.getenv("POSTGRES_HOST", "localhost")
-        db_port = os.getenv("POSTGRES_PORT", "5432")
-        db_name = os.getenv("POSTGRES_DATABASE", "timescaledb")
+        db_user = os.getenv("TIMESCALEDB_USER", os.getenv("POSTGRES_USER", "traduser"))
+        db_password = os.getenv("TIMESCALEDB_PASSWORD", os.getenv("POSTGRES_PASSWORD", "tradpass"))
+        db_host = os.getenv("TIMESCALEDB_HOST", os.getenv("POSTGRES_HOST", "localhost"))
+        db_port = os.getenv("TIMESCALEDB_PORT", os.getenv("POSTGRES_PORT", "5432"))
+        db_name = os.getenv("TIMESCALEDB_DB", os.getenv("POSTGRES_DATABASE", "timescaledb"))
 
         database_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
         logger.info(f"DATABASE_URL: {database_url}")  # Debugging log
@@ -42,8 +42,15 @@ def get_db() -> Any:
         logger.info("Closing database session")  # Debugging log
         db.close()
 
-DB_URL_ASYNC = config_loader.get("TIMESCALEDB_URL_ASYNC", "postgresql+asyncpg://tradmin:tradpass@localhost:5432/tradingdb")
-DB_URL_SYNC = config_loader.get("TIMESCALEDB_URL", "postgresql://tradmin:tradpass@localhost:5432/tradingdb")
+# Construct URLs from environment variables
+db_user = os.getenv("TIMESCALEDB_USER", "tradmin")
+db_password = os.getenv("TIMESCALEDB_PASSWORD", "tradpass")
+db_host = os.getenv("TIMESCALEDB_HOST", "localhost")
+db_port = os.getenv("TIMESCALEDB_PORT", "5432")
+db_name = os.getenv("TIMESCALEDB_DB", "tradingdb")
+
+DB_URL_ASYNC = config_loader.get("TIMESCALEDB_URL_ASYNC", f"postgresql+asyncpg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}")
+DB_URL_SYNC = config_loader.get("TIMESCALEDB_URL", f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}")
 
 # === Async Engine (used for FastAPI + async ORM operations) ===
 async_engine = create_async_engine(
