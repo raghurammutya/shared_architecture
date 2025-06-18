@@ -1,9 +1,9 @@
-from enum import Enum, IntEnum, auto
+from enum import Enum, IntEnum
 
-class UserRole(Enum):
-    ADMIN = auto()
-    EDITOR = auto()
-    VIEWER = auto()
+class UserRole(str, Enum):
+    ADMIN = "ADMIN"
+    EDITOR = "EDITOR" 
+    VIEWER = "VIEWER"
 
 class Status(IntEnum):
     PENDING = 1
@@ -105,7 +105,6 @@ class PollingFrequency(Enum):
             return cls.NORMAL
         else:
             return cls.SLOW
-    STOP_LOSS_LIMIT = "SL"
 
 class ProductType(str, Enum):
     CNC = "CNC"  # Cash and Carry
