@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 from fastapi import HTTPException, status
 from pydantic import BaseModel
-from cryptography import serialization
+from cryptography.hazmat.primitives import serialization
 
 from ..utils.enhanced_logging import get_logger
 from ..exceptions.trade_exceptions import AuthenticationException, AuthorizationException

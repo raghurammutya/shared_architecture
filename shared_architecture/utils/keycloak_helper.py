@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from ..utils.enhanced_logging import get_logger
 from ..exceptions.trade_exceptions import AuthenticationException, AuthorizationException
 from ..db.models.user import User, UserRole
-from ..db.session import get_db_session
+from ..db.session import get_db
 from ..schemas.user import UserCreateSchema
 
 logger = get_logger(__name__)
